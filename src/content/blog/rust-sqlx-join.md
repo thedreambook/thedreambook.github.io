@@ -6,20 +6,21 @@ heroImage: "../../assets/rust.gif"
 tags: ["rust", "sqlx", "join", "database"]
 ---
 
-มีโอกาสได้ทำ Project เกี่ยวกับ Rust แล้วเจอปัญหา Join table ที่ใช้เวลางมหานานมากๆ
-เลยเอามาเขียนแชร์ไว้เผื่อคนอื่นเจอด้วย
+มีโอกาสได้ทำ Project เกี่ยวกับ Rust + SQLx แล้วเจอปัญหา Join table ที่ใช้เวลางมหาวิธีทำนานมากๆ
+
+เลยเอามาเขียนแชร์ไว้เผื่อคนอื่นหาวิธีทำ
 
 <br/>
 
 เมื่อค้นหาวิธี join table ใน google จะเจอ stackoverflow สิ่งนี้
-
-<br/>
 
 [https://stackoverflow.com/questions/76257309/properly-dealing-with-hierarchies-in-rust-sqlx](https://stackoverflow.com/questions/76257309/properly-dealing-with-hierarchies-in-rust-sqlx)
 
 <br/>
 
 ## Solution
+
+จาก StackOverflow
 
 ```rust
 SELECT
@@ -31,23 +32,36 @@ JOIN customers C ON user_id = U.id
 GROUP BY id, email
 ```
 
-เปลี่ยน fields ใน struct ที่ join table เป็น `Vec<T>`
+The Key Point
+
+```sql
+COALESCE(NULLIF(ARRAY_AGG((C.id, C.name)), '{NULL}'), '{}') AS "customers"
+```
+
+SQLx จะใช้ SELECT fields นี้ไปใส่ใน field ของ parent struct
+fields ใน struct ที่ join table ต้องเป็น `Vec<T>`
+
+Explain
 
 `COALESCE` = Return the first non-null value ใน List ถ้าฝั่งซ้าย `NULLIF(ARRAY_AGG(C.*)` เป็น NULL
 
-`NULLIF` = Return NULL ถ้า `ARRAY_AGG(C.*)` แล้วเป็น `{null}`
+`NULLIF` = Return NULL ถ้า `ARRAY_AGG(C.*)` แล้วเป็น `{NULL}`
 
 <br/>
 
-#### ⚠️ ใน stackoverflow บอกว่า cast ด้วย `AS "customers: Vec<CustomerData>" `ซึ่งลองทำแล้วข้อมูลไม่มา ซึ่งแก้โดย cast แค่ `AS "customers"`
+#### ⚠️ ใน stackoverflow บอกว่า cast ด้วย `AS "customers: Vec<CustomerData>" ` ลองทำแล้วข้อมูลไม่มา ซึ่งแก้โดย cast แค่ `AS "customers"`
 
 <br/>
 
 ### Example Code
 
-ลองทำบ้างดีกว่า Example ของเราจะใช้ Relationship กับ Post และ Comments
+ลองทำบ้างดีกว่า
 
-Setup project
+Example ของเราจะใช้ Relationship กับ Post และ Comments
+
+<br/>
+
+#### Setup project
 
 cargo.toml
 
@@ -127,7 +141,7 @@ CREATE TABLE comments
 
 post-and-comment.down.sql
 
-```
+```sql
 -- Drop the comments table first to avoid foreign key constraint issues
 DROP TABLE IF EXISTS comments;
 
@@ -269,4 +283,12 @@ Rust SQLx Join Table Test
 }
 ```
 
+<br>
+
 เท่านี้เราก็สามารถ join table ใน struct field ได้แล้ว เย่ๆ
+
+<br>
+
+### Source Code
+
+[https://github.com/wuttinanhi/rust-sqlx-join-table](https://github.com/wuttinanhi/rust-sqlx-join-table)
