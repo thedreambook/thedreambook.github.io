@@ -54,7 +54,7 @@ const posts = (await getCollection("blog")).sort(
                           height={150}
                           src={post.data.heroImage}
                           alt=""
-                          class="rounded-2xl min-w-[180px] md:min-w-[300px]"
+                          class="rounded-2xl object-cover min-w-[180px] min-h-[120px] max-h-[120px] md:min-w-[300px] md:min-h-[160px] md:max-h-[160px]"
                         />
                       ) : (
                         <Image
