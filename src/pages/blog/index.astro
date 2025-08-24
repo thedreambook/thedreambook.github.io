@@ -26,33 +26,35 @@ const posts = (await getCollection("blog")).sort(
     <Navbar />
 
     <main class="flex flex-col w-full">
-      <section class="flex flex-row w-full justify-center mt-20">
-        <ul class="flex flex-col justify-center items-center basis-4/12">
+      <section class="flex flex-row w-full justify-center mt-20 px-3">
+        <ul class="flex flex-col justify-center items-center md:basis-4/12">
           {
             posts.map((post) => (
-              <li class="py-5 mx-0 px-2 md:mx-0 min-w-[800px] max-w-[800px]">
+              <li class="py-5 md:mx-0 md:min-w-[800px] md:max-w-[800px]">
                 <a href={`/blog/${post.id}/`}>
-                  <div class="flex flex-row border-[1px] rounded-2xl p-5 items-start">
-                    <div class="pr-10 grow flex flex-col h-full">
-                      <h1 class="title text-2xl">{post.data.title}</h1>
+                  <div class="flex flex-row border-[1px] rounded-2xl items-start p-3 md:p-5">
+                    <div class="flex grow flex-col h-full basis-3/4 pr-3">
+                      <h1 class="title text-lg md:text-2xl">
+                        {post.data.title}
+                      </h1>
 
-                      <p class="text-lg text-gray-500 grow">
+                      <p class="md:text-lg text-gray-500 grow hidden md:block">
                         {post.data.description}
                       </p>
 
-                      <p class="shrink align-bottom mt-auto">
+                      <p class="align-bottom mt-auto">
                         <FormattedDate date={post.data.pubDate} />
                       </p>
                     </div>
 
-                    <div class="shrink">
+                    <div class="flex basis-1/4">
                       {post.data.heroImage ? (
                         <Image
                           width={300}
                           height={150}
                           src={post.data.heroImage}
                           alt=""
-                          class="rounded-2xl min-w-[300px]"
+                          class="rounded-2xl min-w-[180px] md:min-w-[300px]"
                         />
                       ) : (
                         <Image
@@ -60,7 +62,7 @@ const posts = (await getCollection("blog")).sort(
                           height={150}
                           src={DefaultHeroImage}
                           alt=""
-                          class="rounded-2xl min-w-[300px]"
+                          class="rounded-2xl min-w-[180px] md:min-w-[300px]"
                         />
                       )}
                     </div>
