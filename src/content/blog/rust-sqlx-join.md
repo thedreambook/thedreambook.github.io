@@ -15,7 +15,7 @@ tags: ["rust", "sqlx", "join", "database"]
 
 <br/>
 
-https://stackoverflow.com/questions/76257309/properly-dealing-with-hierarchies-in-rust-sqlx
+[https://stackoverflow.com/questions/76257309/properly-dealing-with-hierarchies-in-rust-sqlx](https://stackoverflow.com/questions/76257309/properly-dealing-with-hierarchies-in-rust-sqlx)
 
 <br/>
 
@@ -45,7 +45,7 @@ GROUP BY id, email
 
 ### Example Code
 
-ลองมาทำบ้างดีกว่า
+ลองทำบ้างดีกว่า Example ของเราจะใช้ Relationship กับ Post และ Comments
 
 Setup project
 

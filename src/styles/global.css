@@ -38,6 +38,11 @@ body {
 	padding: 3em 1em;
 } */
 
+.prose {
+	word-wrap: break-word;
+	overflow-wrap: break-word;
+}
+
 .prose h1,
 h2,
 h3,
@@ -49,47 +54,43 @@ h6 {
 	line-height: 1.2;
 }
 
-/* h1 {
-	font-size: 3.052em;
+.prose h1 {
+	font-size: 2em;
 }
 
-h2 {
-	font-size: 2.441em;
+.prose h2 {
+	font-size: 1.8em;
 }
 
-h3 {
-	font-size: 1.953em;
+.prose h3 {
+	font-size: 1.5em;
 }
 
-h4 {
-	font-size: 1.563em;
+.prose h4 {
+	font-size: 1.2em;
 }
 
-h5 {
-	font-size: 1.25em;
-} */
+.prose h5 {
+	font-size: 1.0em;
+}
 
-strong,
-b {
+.prose strong, b {
 	font-weight: 700;
 }
 
-a {
-	color: var(--accent);
-	
-}
-
-a:hover {
-	color: var(--accent);
-}
-
-/* p {
+.prose a {
 	margin-bottom: 1em;
+	color: blue;
+}
+
+.prose a:hover {
+	color: blue;
 }
 
 .prose p {
-	margin-bottom: 2em;
-} */
+	margin-top: 1em;
+	margin-bottom: 1em;
+}
 
 /* 
 textarea {
@@ -111,35 +112,38 @@ textarea {
 	border-radius: 8px;
 } */
 
-code {
+.prose code {
 	padding: 2px 5px;
 	background-color: rgb(var(--gray-light));
 	border-radius: 2px;
 }
 
-pre {
-	padding: 1.5em;
+.prose pre {
+	margin: 0 0 0 0;
+	padding: 1em;
 	border-radius: 8px;
-	max-width: 80vw;
+	/* scrollbar-width: none; */
+	/* width: 80vw; */
+	/* max-width: 85vw; */
 }
 
-/* pre>code {
+.prose pre > code {
 	all: unset;
-} */
+}
 
-/* blockquote {
+.prose blockquote {
 	border-left: 4px solid var(--accent);
 	padding: 0 0 0 20px;
 	margin: 0px;
 	font-size: 1.333em;
-} */
+}
 
 /* hr {
 	border: none;
 	border-top: 1px solid rgb(var(--gray-light));
 } */
 
-/* @media (max-width: 720px) {
+@media (max-width: 720px) {
 	body {
 		font-size: 18px;
 	}
@@ -147,22 +151,17 @@ pre {
 	main {
 		padding: 1em;
 	}
-} */
 
-.sr-only {
-	border: 0;
-	padding: 0;
-	margin: 0;
-	position: absolute !important;
-	height: 1px;
-	width: 1px;
-	overflow: hidden;
-	/* IE6, IE7 - a 0 height clip, off to the bottom right of the visible 1px box */
-	clip: rect(1px 1px 1px 1px);
-	/* maybe deprecated but we need to support legacy browsers */
-	clip: rect(1px, 1px, 1px, 1px);
-	/* modern browsers, clip-path works inwards from each corner */
-	clip-path: inset(50%);
-	/* added line to stop words getting smushed together (as they go onto separate lines and some screen readers do not understand line feeds as a space */
-	white-space: nowrap;
+	.prose pre {
+		margin: 0 0 0 0;
+		padding: 1em;
+		border-radius: 8px;
+		width: 90vw;
+		max-width: 90vw;
+	}
+
+	.prose p{
+		width: 90vw;
+		max-width: 90vw;
+	}
 }
