@@ -10,8 +10,12 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   site: 'https://thedreambook.github.io',
   integrations: [mdx(), sitemap()],
-
   vite: {
-    plugins: [tailwindcss()],
+    plugins: [tailwindcss()]
   },
+  markdown: {
+     shikiConfig: {
+       theme: 'dracula',
+    },
+  }
 });

@@ -6,87 +6,93 @@ import type { CollectionEntry } from "astro:content";
 import BaseHead from "../components/BaseHead.astro";
 import Footer from "../components/Footer.astro";
 import FormattedDate from "../components/FormattedDate.astro";
-import Header from "../components/Header.astro";
+import Navbar from "../components/Navbar.astro";
+import DefaultHeroImage from "../assets/blog-placeholder-5.jpg";
 
 type Props = CollectionEntry<"blog">["data"];
 
-const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
+const { title, description, pubDate, updatedDate, heroImage, tags } =
+  Astro.props;
 ---
 
 <html lang="en">
   <head>
     <BaseHead title={title} description={description} />
-    <style>
-      main {
-        width: calc(100% - 2em);
-        max-width: 100%;
-        margin: 0;
-      }
-      .hero-image {
-        width: 100%;
-      }
-      .hero-image img {
-        display: block;
-        margin: 0 auto;
-        border-radius: 12px;
-        box-shadow: var(--box-shadow);
-      }
-      .prose {
-        width: 720px;
-        max-width: calc(100% - 2em);
-        margin: auto;
-        padding: 1em;
-        color: rgb(var(--gray-dark));
-      }
-      .title {
-        margin-bottom: 1em;
-        padding: 1em 0;
-        text-align: center;
-        line-height: 1;
-      }
-      .title h1 {
-        margin: 0 0 0.5em 0;
-      }
-      .date {
-        margin-bottom: 0.5em;
-        color: rgb(var(--gray));
-      }
-      .last-updated-on {
-        font-style: italic;
-      }
-    </style>
+
+    <style></style>
   </head>
 
   <body>
-    <Header />
+    <Navbar />
+
     <main>
-      <article>
-        <div class="hero-image">
-          {
-            heroImage && (
-              <Image width={1020} height={510} src={heroImage} alt="" />
-            )
-          }
-        </div>
-        <div class="prose">
-          <div class="title">
+      <article class="flex flex-row justify-center">
+        <div class="flex flex-col p-5 md:basis-3/6">
+          <div class="hero-image flex align-middle justify-center">
+            {
+              heroImage ? (
+                <Image
+                  width={1020}
+                  height={510}
+                  src={heroImage}
+                  alt=""
+                  class="rounded-2xl"
+                />
+              ) : (
+                <Image
+                  width={1020}
+                  height={510}
+                  src={DefaultHeroImage}
+                  alt=""
+                  class="rounded-2xl"
+                />
+              )
+            }
+          </div>
+
+          <div class="title text-center mt-10">
+            <h1 class="text-4xl">{title}</h1>
+
+            <p class="text-gray-800 text-sm">
+              {
+                tags
+                  ? tags.map((tag, index) => (
+                      <>
+                        {index > 0 && ", "}
+                        <a href={`/tags/${tag}/`} class="text-base italic">
+                          #{tag}
+                        </a>
+                      </>
+                    ))
+                  : null
+              }
+            </p>
+
             <div class="date">
               <FormattedDate date={pubDate} />
+
               {
                 updatedDate && (
                   <div class="last-updated-on">
-                    Last updated on <FormattedDate date={updatedDate} />
+                    Last updated on
+                    <FormattedDate date={updatedDate} />
                   </div>
                 )
               }
             </div>
-            <h1>{title}</h1>
-            <hr />
           </div>
-          <slot />
+
+          <hr class="my-14" />
+
+          <div class="prose max-w-[80vw]">
+            <slot />
+          </div>
         </div>
       </article>
     </main>
-    <Footer />
+
+    <div class="my-20">
+      <Footer />
+    </div>
   </body>
 </html>

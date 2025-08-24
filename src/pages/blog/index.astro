@@ -1,114 +1,80 @@
 ---
-import { Image } from 'astro:assets';
-import { getCollection } from 'astro:content';
-import BaseHead from '../../components/BaseHead.astro';
-import Footer from '../../components/Footer.astro';
-import FormattedDate from '../../components/FormattedDate.astro';
-import Header from '../../components/Header.astro';
-import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
+import "../../styles/global.css";
 
-const posts = (await getCollection('blog')).sort(
-	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+import { Image } from "astro:assets";
+import { getCollection } from "astro:content";
+import BaseHead from "../../components/BaseHead.astro";
+import Footer from "../../components/Footer.astro";
+import FormattedDate from "../../components/FormattedDate.astro";
+import { SITE_DESCRIPTION, SITE_TITLE } from "../../consts";
+import Navbar from "../../components/Navbar.astro";
+import DefaultHeroImage from "../../assets/blog-placeholder-5.jpg";
+
+const posts = (await getCollection("blog")).sort(
+  (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
 );
 ---
 
 <!doctype html>
 <html lang="en">
-	<head>
-		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
-		<style>
-			main {
-				width: 960px;
-			}
-			ul {
-				display: flex;
-				flex-wrap: wrap;
-				gap: 2rem;
-				list-style-type: none;
-				margin: 0;
-				padding: 0;
-			}
-			ul li {
-				width: calc(50% - 1rem);
-			}
-			ul li * {
-				text-decoration: none;
-				transition: 0.2s ease;
-			}
-			ul li:first-child {
-				width: 100%;
-				margin-bottom: 1rem;
-				text-align: center;
-			}
-			ul li:first-child img {
-				width: 100%;
-			}
-			ul li:first-child .title {
-				font-size: 2.369rem;
-			}
-			ul li img {
-				margin-bottom: 0.5rem;
-				border-radius: 12px;
-			}
-			ul li a {
-				display: block;
-			}
-			.title {
-				margin: 0;
-				color: rgb(var(--black));
-				line-height: 1;
-			}
-			.date {
-				margin: 0;
-				color: rgb(var(--gray));
-			}
-			ul li a:hover h4,
-			ul li a:hover .date {
-				color: rgb(var(--accent));
-			}
-			ul a:hover img {
-				box-shadow: var(--box-shadow);
-			}
-			@media (max-width: 720px) {
-				ul {
-					gap: 0.5em;
-				}
-				ul li {
-					width: 100%;
-					text-align: center;
-				}
-				ul li:first-child {
-					margin-bottom: 0;
-				}
-				ul li:first-child .title {
-					font-size: 1.563em;
-				}
-			}
-		</style>
-	</head>
-	<body>
-		<Header />
-		<main>
-			<section>
-				<ul>
-					{
-						posts.map((post) => (
-							<li>
-								<a href={`/blog/${post.id}/`}>
-									{post.data.heroImage && (
-										<Image width={720} height={360} src={post.data.heroImage} alt="" />
-									)}
-									<h4 class="title">{post.data.title}</h4>
-									<p class="date">
-										<FormattedDate date={post.data.pubDate} />
-									</p>
-								</a>
-							</li>
-						))
-					}
-				</ul>
-			</section>
-		</main>
-		<Footer />
-	</body>
+  <head>
+    <BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+
+    <title></title>
+  </head>
+  <body>
+    <Navbar />
+
+    <main class="flex flex-col w-full">
+      <section class="flex flex-row w-full justify-center mt-20">
+        <ul class="flex flex-col justify-center items-center basis-4/12">
+          {
+            posts.map((post) => (
+              <li class="py-5 mx-0 px-2 md:mx-0 min-w-[800px] max-w-[800px]">
+                <a href={`/blog/${post.id}/`}>
+                  <div class="flex flex-row border-[1px] rounded-2xl p-5 items-start">
+                    <div class="pr-10 grow flex flex-col h-full">
+                      <h1 class="title text-2xl">{post.data.title}</h1>
+
+                      <p class="text-lg text-gray-500 grow">
+                        {post.data.description}
+                      </p>
+
+                      <p class="shrink align-bottom mt-auto">
+                        <FormattedDate date={post.data.pubDate} />
+                      </p>
+                    </div>
+
+                    <div class="shrink">
+                      {post.data.heroImage ? (
+                        <Image
+                          width={300}
+                          height={150}
+                          src={post.data.heroImage}
+                          alt=""
+                          class="rounded-2xl min-w-[300px]"
+                        />
+                      ) : (
+                        <Image
+                          width={300}
+                          height={150}
+                          src={DefaultHeroImage}
+                          alt=""
+                          class="rounded-2xl min-w-[300px]"
+                        />
+                      )}
+                    </div>
+                  </div>
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </section>
+
+      <div class="my-24">
+        <Footer />
+      </div>
+    </main>
+  </body>
 </html>
