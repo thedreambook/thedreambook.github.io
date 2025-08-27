@@ -32,16 +32,27 @@ JOIN customers C ON user_id = U.id
 GROUP BY id, email
 ```
 
-The Key Point
+<br>
+
+#### The Key Point
 
 ```sql
 COALESCE(NULLIF(ARRAY_AGG((C.id, C.name)), '{NULL}'), '{}') AS "customers"
 ```
 
 SQLx จะใช้ SELECT fields นี้ไปใส่ใน field ของ parent struct
+<br>
 fields ใน struct ที่ join table ต้องเป็น `Vec<T>`
+<br>
+child struct ต้อง derive
 
-Explain
+```rust
+#[derive(sqlx::Type, Serialize, Deserialize)]
+```
+
+<br>
+
+#### Explain SQL
 
 `COALESCE` = Return the first non-null value ใน List ถ้าฝั่งซ้าย `NULLIF(ARRAY_AGG(C.*)` เป็น NULL
 
