@@ -149,9 +149,14 @@ textarea {
 	}
 
 	main {
-		padding: 1em;
+		padding: 0em;
 	}
 
+	.prose {
+		padding: 0 0 0 1rem;
+	}
+
+	
 	.prose pre {
 		margin: 0 0 0 0;
 		padding: 1em;

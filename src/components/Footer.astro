@@ -2,10 +2,14 @@
 const today = new Date();
 ---
 
-<footer class="flex flex-col items-center justify-center text-center">
-  &copy; {today.getFullYear()} The Dream Book. All rights reserved.
+<footer class="flex flex-col items-center justify-center text-center px-1">
+  <p>
+    &copy; {today.getFullYear()} The Dream Book.
+    <br />
+    All rights reserved.
+  </p>
 
-  <div class="social-links flex gap-4 items-center pt-4">
+  <div class="social-links flex gap-4 items-center pt-5">
     <!-- <a href="https://m.webtoo.ls/@astro" target="_blank">
       <span class="sr-only">Follow Astro on Mastodon</span>
       <svg
@@ -38,6 +42,7 @@ const today = new Date();
 
     <a href="https://github.com/wuttinanhi" target="_blank">
       <span class="sr-only">Go to GitHub repo</span>
+
       <svg
         viewBox="0 0 16 16"
         aria-hidden="true"

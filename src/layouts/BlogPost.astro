@@ -8,6 +8,7 @@ import Footer from "../components/Footer.astro";
 import FormattedDate from "../components/FormattedDate.astro";
 import Navbar from "../components/Navbar.astro";
 import DefaultHeroImage from "../assets/blog-placeholder-5.jpg";
+import BreakpointViewer from "../helpers/BreakpointViewer.astro";
 
 type Props = CollectionEntry<"blog">["data"];
 
@@ -20,29 +21,31 @@ const { title, description, pubDate, updatedDate, heroImage, tags } =
     <BaseHead title={title} description={description} image={heroImage} />
   </head>
 
-  <body>
+  <body class="p-0 m-0">
     <Navbar />
 
-    <main>
-      <article class="flex flex-row justify-center">
-        <div class="flex flex-col p-0 md:p-0 md:max-w-[50vw]">
+    <!-- <BreakpointViewer /> -->
+
+    <main class="p-0 m-0">
+      <article class="flex flex-row justify-center p-0">
+        <div class="flex flex-col p-0 md:p-0 md:max-w-dvw">
           <div class="hero-image flex align-middle justify-center">
             {
               heroImage ? (
                 <Image
-                  width={1020}
-                  height={510}
+                  width={1024}
+                  height={600}
                   src={heroImage}
-                  alt=""
-                  class="rounded-2xl object-cover p-3 max-h-[20vh] md:max-h-[45vh]"
+                  alt="thumbnail image"
+                  class="rounded-[0px] md:rounded-lg object-cover px-0 mx-0 h-[15rem] md:h-[40vh] lg:h-[50vh] xl:h-[50vh]"
                 />
               ) : (
                 <Image
-                  width={1020}
-                  height={510}
+                  width={1024}
+                  height={600}
                   src={DefaultHeroImage}
-                  alt=""
-                  class="rounded-2xl object-cover p-3 max-h-[20vh] md:max-h-[45vh]"
+                  alt="thumbnail image"
+                  class="rounded-[0px] md:rounded-lg object-cover px-0 mx-0 h-[15rem] md:h-[40vh] lg:h-[50vh] xl:h-[50vh]"
                 />
               )
             }
@@ -80,9 +83,11 @@ const { title, description, pubDate, updatedDate, heroImage, tags } =
             </div>
           </div>
 
-          <hr class="my-14 mx-5" />
+          <hr class="my-5 mx-12" />
 
-          <div class="prose px-3">
+          <div
+            class="prose px-3 mt-8 max-w-[90vw] sm:px-20 md:px-auto lg:px-40 xl:px-52 sm:max-w-[90vw] md:max-w-[90vw] lg:max-w-[80vw]"
+          >
             <slot />
           </div>
         </div>
