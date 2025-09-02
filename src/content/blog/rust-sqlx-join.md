@@ -2,7 +2,7 @@
 title: "Rust SQLx: วิธี Join Table"
 description: "วิธี Join Table ของ Rust SQLx"
 pubDate: "Aug 25 2025"
-heroImage: "../../assets/rust.gif"
+heroImage: "../../assets/rust.png"
 tags: ["rust", "sqlx", "join", "database"]
 ---
 
