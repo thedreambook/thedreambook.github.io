@@ -95,9 +95,9 @@ nginx.vm.network "private_network", ip: '192.168.56.11' # Visit http://192.168.5
 nginx.vm.network "forwarded_port", guest: 80, host: 8082
 ```
 
-`guest: 80` หมายถึงเราสามารถ Access ได้ผ่าน `http://localhost:80` เหมือนเครื่องของเราเป็น Server
+`guest: 80` คิดเหมือนว่าเป็น docker expose port
 
-`host: 8082` จะเข้าได้ผ่าน `http://192.168.56.11:8082`
+`host: 8082` คล้ายๆ map docker container expose port ไปที่ physical host และเข้าผ่าน IP ที่ตั้งไว้ได้ `http://192.168.56.11:8082`
 
 <br>
 
