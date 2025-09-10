@@ -86,7 +86,7 @@ config.vm.provision "shell", name: "install-dependencies", path: "./install-depe
 เราสามารถ set IP ของ VM และสามารถ access ผ่านเหมือนมี server อยู่ในวง LAN เราได้เลย
 
 ```rb
-nginx.vm.network "private_network", ip: '192.168.56.11' # Visit http://192.168.56.11:8082
+nginx.vm.network "private_network", ip: '192.168.56.11'
 ```
 
 ส่วน Forward Port ตรงนี้จะ Tricky หน่อย
@@ -95,9 +95,13 @@ nginx.vm.network "private_network", ip: '192.168.56.11' # Visit http://192.168.5
 nginx.vm.network "forwarded_port", guest: 80, host: 8082
 ```
 
-`guest: 80` คิดเหมือนว่าเป็น docker expose port
+`guest: 80` คือพอร์ตใน VM
 
-`host: 8082` คล้ายๆ map docker container expose port ไปที่ physical host และเข้าผ่าน IP ที่ตั้งไว้ได้ `http://192.168.56.11:8082`
+`host: 8082` คือพอร์ตบนเครื่อง host ที่ forward ไปยัง VM:80  
+
+เข้าได้ผ่าน `http://localhost:8082` (หรือ IP ของเครื่อง host)
+
+ถ้าจะเข้าโดยใช้ IP ของ VM `192.168.56.11` ให้ใช้ `http://192.168.56.11:80` (ไม่ใช่ `:8082`)
 
 <br>
 
