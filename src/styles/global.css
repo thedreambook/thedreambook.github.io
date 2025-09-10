@@ -170,3 +170,23 @@ textarea {
 		max-width: 90vw;
 	}
 }
+
+.prose p > code {
+	background-color: #f1f5f9;
+	color: #ffffff;
+	padding: 0.125rem 0.25rem;
+	border-radius: 0.25rem;
+	font-size: 0.875em;
+	font-weight: 500;
+	border: 1px solid #e2e8f0;
+	padding: 3px;
+  }
+  
+/* Dark mode variant */
+@media (prefers-color-scheme: dark) {
+	.prose p > code {
+		background-color: #2e3e55;
+		color: #cbd5e1;
+		border-color: #2e3e55;
+	}
+}
