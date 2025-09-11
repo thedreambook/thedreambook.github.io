@@ -26,13 +26,13 @@ const posts = (await getCollection("blog")).sort(
     <Navbar />
 
     <main class="flex flex-col w-full">
-      <section class="flex flex-row w-full justify-center mt-0 md:mt-20 px-3">
+      <section class="flex flex-row w-full justify-center mt-3 md:mt-14 px-3">
         <ul class="flex flex-col justify-center items-center md:basis-4/12">
           {
             posts.map((post) => (
-              <li class="py-5 md:mx-0 md:min-w-[800px] md:max-w-[800px]">
+              <li class="py-2 md:mx-0 md:min-w-[800px] md:max-w-[800px]">
                 <a href={`/blog/${post.id}/`}>
-                  <div class="flex flex-row border-[1px] rounded-2xl items-start p-3 md:p-5">
+                  <div class="flex flex-row border-[1px] rounded-md items-start p-3 md:p-5">
                     <div class="flex grow flex-col h-full basis-3/4 pr-3">
                       <h1 class="title text-lg md:text-2xl">
                         {post.data.title}
@@ -54,7 +54,7 @@ const posts = (await getCollection("blog")).sort(
                           height={150}
                           src={post.data.heroImage}
                           alt=""
-                          class="rounded-2xl object-cover min-w-[180px] min-h-[120px] max-h-[120px] md:min-w-[300px] md:min-h-[160px] md:max-h-[160px]"
+                          class="rounded-md object-cover min-w-[180px] min-h-[120px] max-h-[120px] md:min-w-[300px] md:min-h-[160px] md:max-h-[160px]"
                         />
                       ) : (
                         <Image
@@ -62,7 +62,7 @@ const posts = (await getCollection("blog")).sort(
                           height={150}
                           src={DefaultHeroImage}
                           alt=""
-                          class="rounded-2xl min-w-[180px] md:min-w-[300px]"
+                          class="rounded-md min-w-[180px] md:min-w-[300px]"
                         />
                       )}
                     </div>
