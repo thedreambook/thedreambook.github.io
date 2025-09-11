@@ -1,16 +1,17 @@
 ---
-title: "Flask วิธี Test WebSocket ของ Flask-SocketIO"
-description: "วิธีการ Test SocketIO ของ Flask ด้วย Pytest"
-pubDate: "Sep 12 2025 6:40 AM"
+title: "Flask: How to Test WebSocket with Flask-SocketIO"
+description: "How to Test Flask’s SocketIO with Pytest"
+pubDate: "Sep 12 2025 6:50 AM"
 heroImage: "../../assets/blog/flask-socketio-test/thumbnail.png"
-tags: ["python", "flask", "Flask-SocketIO", "SocketIO", "pytest"]
+tags:
+  ["python", "flask", "Flask-SocketIO", "SocketIO", "pytest", "english-version"]
 ---
 
-พอดีได้เอา Project ที่เขียนด้วย Flask Python แล้วอยากทำ Test เพิ่มด้วย
+I had a project built with Flask (Python) and wanted to add some tests.
 
-ใน Project มี Websocket ที่ใช้ Flask-SocketIO แล้วมันเทสยังไงกันนะ
+In the project, there’s a WebSocket using Flask-SocketIO — but how do we test that?
 
-ผมไปงมหามาให้แล้ว
+I did some digging and here’s what I found.
 
 <br>
 
@@ -18,7 +19,7 @@ tags: ["python", "flask", "Flask-SocketIO", "SocketIO", "pytest"]
 
 <br>
 
-เริ่มต้นด้วยการสร้าง Flask + SocketIO แบบง่ายๆ `main.py`
+Start by creating a simple Flask + SocketIO app `main.py`:
 
 ```py
 from flask import Flask, render_template
@@ -51,7 +52,7 @@ if __name__ == "__main__":
     socketio.run(app)
 ```
 
-แล้วสร้าง pytest test file `test_main.py`
+Then create a pytest test file `test_main.py`:
 
 ```py
 import pytest
@@ -72,12 +73,11 @@ def flask_client(app):
 @pytest.fixture()
 def runner(app):
     return app.test_cli_runner()
-
 ```
 
-ต่อมาสร้าง SocketIO test client ด้วย `socketio.test_client(app)`
+Next, create a SocketIO test client with `socketio.test_client(app)`
 
-ตัว `socketio.test_client(app)` ต้องใช้ `app` ที่สร้างจาก pytest fixture ข้างบน
+The `socketio.test_client(app)` must use the `app` created from the pytest fixture above:
 
 ```py
 @pytest.fixture()
@@ -88,13 +88,13 @@ def socketio_client(app):
 
 <br>
 
-#### ⚠️ Gotcha !
+#### ⚠️ Gotcha!
 
-`socketio` ของ `socketio.test_client(app)` คือ `socketio = SocketIO()` จาก `main.py`
+The `socketio` in `socketio.test_client(app)` is the same `socketio = SocketIO()` from `main.py`.
 
 <br>
 
-เขียน testcase ทดสอบ SocketIO
+Write a test case for SocketIO:
 
 ```py
 def test_socketio_message(socketio_client: SocketIOTestClient):
@@ -110,7 +110,7 @@ def test_socketio_message(socketio_client: SocketIOTestClient):
 
 <br>
 
-แล้วรัน Test ด้วย
+Then run the test with:
 
 ```sh
 pytest
@@ -118,7 +118,7 @@ pytest
 
 <br>
 
-Done! We were finally able to test WebSocket! 🎉
+Done! We can finally test WebSocket! 🎉
 
 <p align="center">
   <img src="https://media1.tenor.com/m/IVfBB8GdECAAAAAC/happy-tuesday.gif" width="300" height="300"/>
