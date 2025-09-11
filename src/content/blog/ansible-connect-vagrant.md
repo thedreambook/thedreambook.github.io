@@ -20,19 +20,18 @@ vagrant ssh-config
 vagrant ssh-config > ./ssh_config
 ```
 
-
 แล้วเราสามารถสร้าง `inventory.ini` ได้แบบนี้
 
 ```ini
 [vagrant]
-nginx  
-apache 
+nginx
+apache
 
 ```
 
 โดยไม่ต้องมี `ansible_host=127.0.0.1` `ansible_port=2222` `ansible_user=vagrant` `ansible_ssh_private_key_file=path/to/private_key`
 
-เพราะถ้ามี variable เหล่านี้ Ansible จะ Ignore Host ใน ssh config แล้วใช้ใน inventory.ini แทน (⚠️  ระวังตรงนี้ )
+เพราะถ้ามี variable เหล่านี้ Ansible จะ Ignore Host ใน ssh config แล้วใช้ใน inventory.ini แทน (⚠️ ระวังตรงนี้ )
 
 ลองสร้าง `playbook.yaml` แบบ simple เพื่อ Test
 
@@ -40,12 +39,12 @@ apache
 - name: My first play
   hosts: all
   tasks:
-   - name: Ping my hosts
-     ansible.builtin.ping:
+    - name: Ping my hosts
+      ansible.builtin.ping:
 
-   - name: Print message
-     ansible.builtin.debug:
-      msg: Hello world
+    - name: Print message
+      ansible.builtin.debug:
+        msg: Hello world
 ```
 
 แล้วรันด้วย
@@ -72,14 +71,14 @@ ansible-playbook -i ansible/inventory.ini ansible/playbook.yaml
 
 <br>
 
-`ANSIBLE_SSH_COMMON_ARGS` specify path ไปที่ ssh config จาก `vagrant ssh-config` 
+`ANSIBLE_SSH_COMMON_ARGS` specify path ไปที่ ssh config จาก `vagrant ssh-config`
 
 ด้วย value `"-F ssh_config"` แล้วให้ ansible เรียกใช้ file นี้แทน
 
 <br>
 Command:
 
-```
+```sh
 ansible-playbook -i ansible/inventory.ini ansible/playbook.yaml
 ```
 
@@ -87,7 +86,7 @@ WHERE
 
 `-i ansible/inventory.ini` คือ path ของ inventory
 
-`ansible/playbook.yaml` แล้วตามด้วย path ของ playbook 
+`ansible/playbook.yaml` แล้วตามด้วย path ของ playbook
 
 Output
 
@@ -96,7 +95,6 @@ Output
 <br>
 
 เท่านี้เราก็สามารถใช้ Ansible จัดการกับ Vagrant ได้แล้ว 😄
-
 
 <br>
 
