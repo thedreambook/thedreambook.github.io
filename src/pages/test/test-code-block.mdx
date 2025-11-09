@@ -1,0 +1,19 @@
+---
+title: "Test code block"
+description: "Test code block"
+pubDate: "Nov 10 2025 8:30 PM"
+heroImage: "../../assets/blog/first-post/thumbnail.png"
+tags: ["test"]
+---
+
+```diff python {6} {"1. Provide the value prop here:":1-2}
+#
+from flask import Flask, render_template
+from flask_socketio import SocketIO, send
+
+- socketio = SocketIO()
++ app = Flask(**name**)
+app.config["SECRET_KEY"] = "secret!
+```
+
+del={5} ins={6-7}
