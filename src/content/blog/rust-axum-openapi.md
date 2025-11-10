@@ -178,7 +178,7 @@ utoipa_axum::router::OpenApiRouter::with_openapi(ApiDoc::openapi())
         // the rest of the code....
 ```
 
-![swagger ui](../../assets/blog/rust-axum-openapi/redoc-basic.png)
+![redoc ui](../../assets/blog/rust-axum-openapi/redoc-basic.png)
 
 <br/>
 
@@ -195,7 +195,7 @@ utoipa_axum::router::OpenApiRouter::with_openapi(ApiDoc::openapi())
         // the rest of the code....
 ```
 
-![swagger ui](../../assets/blog/rust-axum-openapi/rapidoc-basic.png)
+![rapidoc ui](../../assets/blog/rust-axum-openapi/rapidoc-basic.png)
 
 <br/>
 
@@ -212,7 +212,7 @@ utoipa_axum::router::OpenApiRouter::with_openapi(ApiDoc::openapi())
         // the rest of the code....
 ```
 
-![swagger ui](../../assets/blog/rust-axum-openapi/scalar-basic.png)
+![scalar ui](../../assets/blog/rust-axum-openapi/scalar-basic.png)
 
 <br/>
 
@@ -225,3 +225,7 @@ utoipa_axum::router::OpenApiRouter::with_openapi(ApiDoc::openapi())
 เราจะสร้าง OpenAPI routes สำหรับรับข้อมูล / ใช้ http method อื่นๆ / ใช้ `/{param}` / etc
 
 [/blog/rust-axum-openapi-ep2](/blog/rust-axum-openapi-ep2)
+
+## Source Code
+
+[https://github.com/wuttinanhi/rust-axum-swagger-example](https://github.com/wuttinanhi/rust-axum-swagger-example)
