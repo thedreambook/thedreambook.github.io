@@ -2,7 +2,7 @@
 title: "Rust เขียน Axum พร้อม OpenAPI docs ด้วย Utoipa (EP2)"
 description: "เขียน Axum API server พร้อม OpenAPI docs Swagger ด้วย Utoipa"
 pubDate: "Nov 10 2025 7:00 AM"
-heroImage: "../../assets/blog/flask-socketio-test/thumbnail.png"
+heroImage: "../../assets/blog/rust-axum-openapi/thumbnail.webp"
 tags: ["rust", "axum", "openapi", "utoipa", "swagger", "redoc", "scalar"]
 ---
 
@@ -197,7 +197,7 @@ route นี้เราจะเพิ่ม `params` ขึ้นมา
 
 `"id" = i32` ต้องเป็น double quote ไม่งั้นจะ Error
 
-`Path` specify เพื่อบอกว่าใช้ Extracter อะไร
+`Path` specify เพื่อบอกว่าใช้ Extractor อะไร
 
 และเราสามารถเพิ่ม responses ในหลาย result ได้ ในกรณีนี้คือ User not found
 
@@ -229,7 +229,7 @@ async fn update_user(
 }
 ```
 
-route นี้จะเหมือนกับข้างบนเลยเปลี่ยนแค่ method ใน `#[utoipa::path]` และ logic code block
+route นี้จะเหมือนกับข้างบนเลย เปลี่ยนแค่ HTTP method ใน `#[utoipa::path]` และ logic code block
 
 ### Delete User route
 

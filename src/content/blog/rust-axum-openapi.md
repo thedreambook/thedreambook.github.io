@@ -2,11 +2,13 @@
 title: "Rust เขียน Axum พร้อม OpenAPI docs ด้วย Utoipa"
 description: "เขียน Axum API server พร้อม OpenAPI docs Swagger ด้วย Utoipa"
 pubDate: "Nov 10 2025 6:00 AM"
-heroImage: "../../assets/blog/flask-socketio-test/thumbnail.png"
+heroImage: "../../assets/blog/rust-axum-openapi/thumbnail.webp"
 tags: ["rust", "axum", "openapi", "utoipa", "swagger", "redoc", "scalar"]
 ---
 
-พอดีเห็นโพสต์ผ่าน timeline ในกลุ่ม rust เกี่ยวกับ rust + openapi เลยอยากลองทำดูบ้าง
+# Intro
+
+พอดีเห็นโพสต์ผ่าน timeline ในกลุ่ม rust เกี่ยวกับ rust + openapi เลยอยากลองทำดูบ้างและเดี๋ยวจะมีโอกาสได้ใช้ในอนาคต
 
 ## Coding Time!
 
@@ -53,7 +55,7 @@ pub async fn hello_world_route() -> Html<String> {
 }
 ```
 
-เราสามารถกำหนด `method` `path` `response` ด้วย macro attribute `#[utoipa::path()]` แบบตัวอย่างได้เลย
+เราสามารถกำหนด `method` `path` `response` ด้วย attribute macro `#[utoipa::path]` แบบตัวอย่างได้เลย
 
 หาก return response body เป็น JSON เราสามารถกำหนดได้ด้วย struct เช่น `body = User`
 
@@ -142,6 +144,8 @@ utoipa_axum::router::OpenApiRouter::with_openapi(ApiDoc::openapi())
 
 #### จากนั้น
 
+เราจะเพิ่ม swagger UI เพื่อให้สามารถเรียกดูได้ผ่าน `/docs`
+
 ```rust
     // build our application with a route
     let app = router
@@ -151,13 +155,13 @@ utoipa_axum::router::OpenApiRouter::with_openapi(ApiDoc::openapi())
         );
 ```
 
-เราจะเพิ่ม swagger UI เพื่อให้สามารถเรียกดูได้ผ่าน `/docs`
-
 - `/api-docs/openapi.json` คือที่อยู่ของ OpenAPI difinition ของ API เรา
 
 - เราต้องใส่ `api.clone()` จากข้างบนเพื่อบอกว่า API ของเราคืออันไหน
 
-#### ลองรันดูแล้วเข้าไปที่ http /docs เพื่อดู swagger UI
+<br/>
+
+### ลองรันดูแล้วเข้าไปที่ http /docs เพื่อดู swagger UI
 
 ![swagger ui](../../assets/blog/rust-axum-openapi/swagger-ui-basic.png)
 
@@ -214,15 +218,13 @@ utoipa_axum::router::OpenApiRouter::with_openapi(ApiDoc::openapi())
 
 ![scalar ui](../../assets/blog/rust-axum-openapi/scalar-basic.png)
 
-<br/>
-
-ส่วนตัวชอบ Scalar เพราะมี UI modern กว่าแล้ว generate code ได้
+ส่วนตัวชอบ Scalar เพราะมี UI modern กว่า แล้ว generate code ได้
 
 <br/>
 
 # Next Chapter
 
-เราจะสร้าง OpenAPI routes สำหรับรับข้อมูล / ใช้ http method อื่นๆ / ใช้ `/{param}` / etc
+ตอนต่อไปเราจะสร้าง OpenAPI routes สำหรับรับข้อมูล / ใช้ http method อื่นๆ / ใช้ `/{param}` / etc
 
 [/blog/rust-axum-openapi-ep2](/blog/rust-axum-openapi-ep2)
 
