@@ -1,0 +1,50 @@
+---
+// Toast notification component for floating action confirmations
+---
+
+<div
+  id="toastMessage"
+  class="fixed bottom-6 right-6 z-50 bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 px-4 py-2.5 rounded-xl shadow-xl text-xs font-medium flex items-center gap-2 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none"
+  role="status"
+  aria-live="polite"
+>
+  <svg
+    class="w-4 h-4 text-emerald-400 dark:text-emerald-600 shrink-0"
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+  >
+    <path
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-width="2"
+      d="M5 13l4 4L19 7"></path>
+  </svg>
+  <span id="toastText">Action completed</span>
+</div>
+
+<script is:inline>
+  /**
+   * Displays temporary toast banner in bottom right corner.
+   * @param {string} message - Message text to present in notification.
+   */
+  window.showToast = function (message) {
+    const toast = document.getElementById("toastMessage");
+    const toastText = document.getElementById("toastText");
+    if (!toast || !toastText) return;
+
+    toastText.innerText = message;
+    toast.classList.remove("translate-y-20", "opacity-0");
+    toast.classList.add("translate-y-0", "opacity-100");
+
+    if (window.__toastTimeout) {
+      clearTimeout(window.__toastTimeout);
+    }
+
+    window.__toastTimeout = setTimeout(() => {
+      toast.classList.add("translate-y-20", "opacity-0");
+      toast.classList.remove("translate-y-0", "opacity-100");
+    }, 2500);
+  };
+</script>
+

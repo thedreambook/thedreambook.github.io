@@ -1,16 +1,148 @@
 ---
 import { SITE_TITLE } from "../consts";
-import HeaderLink from "./HeaderLink.astro";
+import { ThemeMode, THEME_STORAGE_KEY } from "../helpers/theme";
 ---
 
-<header>
-  <nav class="p-5 flex items-center justify-between">
-    <a href="/"><h5 class="text-black text-2xl">{SITE_TITLE}</h5></a>
+<header
+  class="sticky top-0 w-full bg-surface-paper/95 dark:bg-surface-dark/95 backdrop-blur-md border-b border-neutral-200/80 dark:border-neutral-800/80 z-40 transition-colors"
+>
+  <div
+    class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between"
+  >
+    <!-- Brand & Publication Name -->
+    <a href="/" class="flex items-center gap-3 group">
+      <div
+        class="w-8 h-8 rounded-lg bg-neutral-900 dark:bg-white flex items-center justify-center text-white dark:text-neutral-900 font-mono font-bold text-base shadow-xs group-hover:scale-105 transition-transform"
+      >
+        λ
+      </div>
+      <div class="flex flex-col">
+        <span
+          class="text-base font-bold tracking-tight text-neutral-900 dark:text-white leading-none"
+        >
+          {SITE_TITLE}
+        </span>
+        <span
+          class="text-[10px] text-neutral-500 dark:text-neutral-400 font-mono tracking-wider pt-0.5"
+        >
+          Systems • Architecture • Engineering
+        </span>
+      </div>
+    </a>
 
-    <div class="internal-links flex space-x-5">
-      <HeaderLink href="/">Home</HeaderLink>
-      <HeaderLink href="/blog">Blog</HeaderLink>
-      <!-- <HeaderLink href="/about">About</HeaderLink> -->
+    <!-- Actions: Search Trigger, Theme Toggle, Profile -->
+    <div class="flex items-center gap-2 sm:gap-4">
+      <!-- Search Trigger (⌘K) -->
+      <button
+        id="searchTriggerBtn"
+        type="button"
+        class="flex items-center gap-2 px-3 py-1.5 rounded-full text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 text-xs transition-colors cursor-pointer"
+        title="Search stories (⌘K)"
+      >
+        <svg
+          class="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
+        <span class="hidden sm:inline font-mono text-[11px] opacity-75">⌘K</span>
+      </button>
+
+      <!-- Dark / Light Mode Toggle -->
+      <button
+        id="themeToggleBtn"
+        type="button"
+        class="p-2 rounded-full text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 transition-colors cursor-pointer"
+        aria-label="Toggle Theme"
+      >
+        <svg
+          id="themeIconSun"
+          class="w-4 h-4 hidden dark:block text-amber-400"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+          ></path>
+        </svg>
+        <svg
+          id="themeIconMoon"
+          class="w-4 h-4 block dark:hidden text-neutral-600"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+          ></path>
+        </svg>
+      </button>
+
+      <!-- User Profile Avatar / GitHub link -->
+      <a
+        href="https://github.com/wuttinanhi"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="flex items-center group"
+        title="GitHub Profile"
+      >
+        <img
+          src="https://github.com/wuttinanhi.png"
+          alt="GitHub Profile"
+          class="w-7 h-7 rounded-full object-cover ring-1 ring-neutral-300 dark:ring-neutral-700 group-hover:ring-emerald-500 transition-all"
+        />
+      </a>
+
+       <a
+        href="https://github.com/dreamoutbox"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="flex items-center group"
+        title="GitHub Profile"
+      >
+        <img
+          src="https://github.com/dreamoutbox.png"
+          alt="GitHub Profile"
+          class="w-7 h-7 rounded-full object-cover ring-1 ring-neutral-300 dark:ring-neutral-700 group-hover:ring-emerald-500 transition-all"
+        />
+      </a>
     </div>
-  </nav>
+  </div>
+
+  <slot name="subnav" />
 </header>
+
+<script is:inline define:vars={{ ThemeMode, THEME_STORAGE_KEY }}>
+  const themeToggle = document.getElementById("themeToggleBtn");
+  if (themeToggle) {
+    themeToggle.addEventListener("click", () => {
+      const isDark = document.documentElement.classList.contains("dark");
+      if (isDark) {
+        document.documentElement.classList.remove("dark");
+        localStorage.setItem(THEME_STORAGE_KEY, ThemeMode.Light);
+        if (typeof window.showToast === "function") {
+          window.showToast("Light mode active");
+        }
+      } else {
+        document.documentElement.classList.add("dark");
+        localStorage.setItem(THEME_STORAGE_KEY, ThemeMode.Dark);
+        if (typeof window.showToast === "function") {
+          window.showToast("Dark mode active");
+        }
+      }
+    });
+  }
+</script>

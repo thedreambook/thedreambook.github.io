@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Distributed Log — Minimalist Systems & Software Engineering</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                        serif: ['Newsreader', 'Georgia', 'Cambria', 'serif'],
+                        mono: ['JetBrains Mono', 'Fira Code', 'Menlo', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                        },
+                        surface: {
+                            light: '#ffffff',
+                            paper: '#fafafa',
+                            dark: '#121212',
+                            darker: '#0a0a0a',
+                            cardDark: '#1a1a1a',
+                            cardDarkHover: '#222222'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts: Inter, Newsreader, JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap"
+        rel="stylesheet">
+
+    <style>
+        /* Smooth theme transitions */
+        * {
+            transition: background-color 0.2s ease, border-color 0.2s ease, color 0.15s ease;
+        }
+
+        .article-serif {
+            font-family: 'Newsreader', Georgia, Cambria, serif;
+        }
+
+        /* Clap float badge animation */
+        @keyframes floatUpFade {
+            0% {
+                opacity: 1;
+                transform: translate(-50%, 0) scale(0.9);
+            }
+
+            50% {
+                opacity: 1;
+                transform: translate(-50%, -20px) scale(1.15);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -40px) scale(1);
+            }
+        }
+
+        .animate-clap-float {
+            animation: floatUpFade 0.75s ease-out forwards;
+        }
+
+        /* Hide scrollbar for horizontal category tabs */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.4);
+            border-radius: 9999px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(156, 163, 175, 0.7);
+        }
+    </style>
+</head>
+
+<body
+    class="bg-surface-paper dark:bg-surface-dark text-neutral-800 dark:text-[#e4e4e7] antialiased selection:bg-emerald-500/20 selection:text-emerald-900 dark:selection:text-emerald-300 min-h-screen flex flex-col font-sans">
+
+    <!-- Minimalist Sticky Header -->
+    <header
+        class="sticky top-0 w-full bg-surface-paper/95 dark:bg-surface-dark/95 backdrop-blur-md border-b border-neutral-200/80 dark:border-neutral-800/80 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+
+            <!-- Brand & Publication Name -->
+            <a href="#" class="flex items-center gap-3 group">
+                <div
+                    class="w-8 h-8 rounded-lg bg-neutral-900 dark:bg-white flex items-center justify-center text-white dark:text-neutral-900 font-mono font-bold text-base shadow-xs group-hover:scale-105 transition-transform">
+                    λ
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-base font-bold tracking-tight text-neutral-900 dark:text-white leading-none">The
+                        Distributed Log</span>
+                    <span
+                        class="text-[10px] text-neutral-500 dark:text-neutral-400 font-mono tracking-wider pt-0.5">Systems
+                        • Performance • Architecture</span>
+                </div>
+            </a>
+
+            <!-- Actions: Search Trigger, Theme Toggle, Profile -->
+            <div class="flex items-center gap-2 sm:gap-4">
+                <!-- Search Trigger (⌘K) -->
+                <button id="searchTriggerBtn"
+                    class="flex items-center gap-2 px-3 py-1.5 rounded-full text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 text-xs transition-colors"
+                    title="Search stories (⌘K)">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <span class="hidden sm:inline font-mono text-[11px] opacity-75">⌘K</span>
+                </button>
+
+                <!-- Dark / Light Mode Toggle -->
+                <button id="themeToggleBtn"
+                    class="p-2 rounded-full text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 transition-colors"
+                    aria-label="Toggle Theme">
+                    <svg id="themeIconSun" class="w-4 h-4 hidden dark:block text-amber-400" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    <svg id="themeIconMoon" class="w-4 h-4 block dark:hidden text-neutral-600" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                    </svg>
+                </button>
+
+                <!-- User Profile Avatar -->
+                <a href="#" class="flex items-center group">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&h=80&q=80"
+                        alt="User"
+                        class="w-7 h-7 rounded-full object-cover ring-1 ring-neutral-300 dark:ring-neutral-700 group-hover:ring-emerald-500 transition-all"
+                        onerror="this.src='https://placehold.co/80x80/262626/ffffff?text=U'">
+                </a>
+            </div>
+
+        </div>
+
+        <!-- Editorial Hashtag Badge Filter Bar -->
+        <div class="border-t border-neutral-200/60 dark:border-neutral-800/60">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-2.5 text-xs font-mono">
+                    <button
+                        class="topic-filter-btn px-3 py-1 rounded-full whitespace-nowrap bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-semibold transition-colors"
+                        data-topic="all">
+                        #all
+                    </button>
+                    <button
+                        class="topic-filter-btn px-3 py-1 rounded-full whitespace-nowrap text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 transition-colors"
+                        data-topic="systems">
+                        #systems
+                    </button>
+                    <button
+                        class="topic-filter-btn px-3 py-1 rounded-full whitespace-nowrap text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 transition-colors"
+                        data-topic="rust">
+                        #rust
+                    </button>
+                    <button
+                        class="topic-filter-btn px-3 py-1 rounded-full whitespace-nowrap text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 transition-colors"
+                        data-topic="concurrency">
+                        #concurrency
+                    </button>
+                    <button
+                        class="topic-filter-btn px-3 py-1 rounded-full whitespace-nowrap text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 transition-colors"
+                        data-topic="databases">
+                        #databases
+                    </button>
+                    <button
+                        class="topic-filter-btn px-3 py-1 rounded-full whitespace-nowrap text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 transition-colors"
+                        data-topic="linux">
+                        #linux
+                    </button>
+                    <button
+                        class="topic-filter-btn px-3 py-1 rounded-full whitespace-nowrap text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 transition-colors"
+                        data-topic="performance">
+                        #performance
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Centered Editorial Feed (Single Column, max-w-3xl) -->
+    <main class="flex-grow max-w-3xl mx-auto px-4 sm:px-6 py-10 w-full space-y-10">
+
+        <!-- PINNED / FEATURED LEAD STORY (With Cover Image) -->
+        <section class="feed-card pb-10 border-b border-neutral-200/80 dark:border-neutral-800/80"
+            data-category="systems">
+            <div
+                class="flex items-center gap-2 mb-3 text-xs font-mono font-medium text-emerald-600 dark:text-emerald-400">
+                <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                    <path
+                        d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                </svg>
+                <span class="tracking-wider uppercase">Featured Lead Story</span>
+            </div>
+
+            <div class="group flex flex-col sm:flex-row gap-6 items-start">
+                <div class="flex-1 order-2 sm:order-1">
+                    <!-- Author Meta -->
+                    <div class="flex items-center gap-2.5 mb-2.5">
+                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=60&h=60&q=80"
+                            alt="Elena Vance" class="w-6 h-6 rounded-full object-cover">
+                        <span class="text-xs font-semibold text-neutral-900 dark:text-neutral-200">Elena Vance</span>
+                        <span class="text-neutral-300 dark:text-neutral-700">•</span>
+                        <time class="text-xs text-neutral-500 font-mono">Nov 2, 2026</time>
+                    </div>
+
+                    <!-- Title -->
+                    <a href="#" class="block group">
+                        <h2
+                            class="article-serif text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-white leading-[1.25] tracking-tight group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                            Building a Fault-Tolerant Distributed Consensus Engine in Rust
+                        </h2>
+                    </a>
+
+                    <!-- Excerpt -->
+                    <p class="mt-2.5 text-neutral-600 dark:text-neutral-400 text-sm leading-relaxed line-clamp-3">
+                        How we architected an asynchronous Raft-based state machine that achieves sub-millisecond commit
+                        quorums and 250,000 requests per second with strict zero-copy concurrency and zero locks on the
+                        replication critical path.
+                    </p>
+
+                    <!-- Footer Meta -->
+                    <div class="mt-4 flex items-center gap-3 text-xs text-neutral-500 font-sans">
+                        <span
+                            class="px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-800/40">
+                            #systems
+                        </span>
+                        <span>8 min read</span>
+                    </div>
+                </div>
+
+                <!-- Featured Thumbnail -->
+                <div
+                    class="w-full sm:w-52 h-44 sm:h-36 rounded-xl overflow-hidden shrink-0 order-1 sm:order-2 bg-neutral-100 dark:bg-neutral-800">
+                    <img src="https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=600&h=400&q=80"
+                        alt="Consensus Engine Blueprint"
+                        class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        onerror="this.src='https://placehold.co/600x400/18181b/ffffff?text=Systems+Raft'">
+                </div>
+            </div>
+        </section>
+
+        <!-- STORIES STREAM: Balanced With & Without Cover Images -->
+        <section class="space-y-9" id="storiesFeed">
+
+            <!-- STORY 1: [WITHOUT COVER IMAGE] -->
+            <article class="feed-card group pb-9 border-b border-neutral-200/70 dark:border-neutral-800/70"
+                data-category="concurrency">
+                <div class="flex items-center gap-2 mb-2">
+                    <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=60&h=60&q=80"
+                        alt="Marcus Chen" class="w-5 h-5 rounded-full object-cover">
+                    <span class="text-xs font-semibold text-neutral-900 dark:text-neutral-200">Marcus Chen</span>
+                    <span class="text-neutral-300 dark:text-neutral-700">•</span>
+                    <time class="text-xs text-neutral-500 font-mono">Oct 29, 2026</time>
+                    <span
+                        class="text-[10px] font-mono px-2 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 ml-auto sm:ml-0">
+                        Essay
+                    </span>
+                </div>
+
+                <a href="#" class="block group">
+                    <h3
+                        class="article-serif text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white leading-snug tracking-tight group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                        Demystifying Memory Ordering in Lock-Free Concurrent Programming
+                    </h3>
+                </a>
+
+                <p class="mt-2 text-neutral-600 dark:text-neutral-400 text-sm leading-relaxed">
+                    Sequential consistency is intuitive, but modern multi-core x86 and ARM processors aggressively
+                    reorder store buffers. When write-heavy caches invalidate lines across cores, relaxed atomics can
+                    silently cause memory tear if acquire-release barriers are misunderstood.
+                </p>
+
+                <!-- Technical Inset Accent for posts without cover images -->
+                <div
+                    class="mt-3.5 px-3.5 py-2.5 rounded-lg bg-neutral-100/80 dark:bg-[#18181b] border border-neutral-200/70 dark:border-neutral-800/80 flex items-center justify-between text-xs font-mono text-neutral-600 dark:text-neutral-400">
+                    <div class="flex items-center gap-2 truncate">
+                        <span class="text-emerald-600 dark:text-emerald-400 font-semibold">$</span>
+                        <span class="truncate">atomic::fence(Ordering::Acquire) // synchronizes with remote store</span>
+                    </div>
+                    <span class="text-[11px] text-neutral-400 shrink-0 font-sans ml-2">x86_64 TSO</span>
+                </div>
+
+                <div class="mt-3.5 flex items-center gap-3 text-xs text-neutral-500">
+                    <span
+                        class="px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">
+                        #concurrency
+                    </span>
+                    <span>11 min read</span>
+                    <span class="hidden sm:inline text-neutral-300 dark:text-neutral-700">•</span>
+                    <span class="hidden sm:inline">Selected Essay</span>
+                </div>
+            </article>
+
+            <!-- STORY 2: [WITH COVER IMAGE] -->
+            <article class="feed-card group pb-9 border-b border-neutral-200/70 dark:border-neutral-800/70"
+                data-category="systems">
+                <div class="flex gap-5 sm:gap-6 items-start">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-2">
+                            <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=60&h=60&q=80"
+                                alt="Devon Wright" class="w-5 h-5 rounded-full object-cover">
+                            <span class="text-xs font-semibold text-neutral-900 dark:text-neutral-200">Devon
+                                Wright</span>
+                            <span class="text-neutral-300 dark:text-neutral-700">•</span>
+                            <time class="text-xs text-neutral-500 font-mono">Oct 24, 2026</time>
+                        </div>
+
+                        <a href="#" class="block group">
+                            <h3
+                                class="article-serif text-lg sm:text-xl font-bold text-neutral-900 dark:text-white leading-snug tracking-tight group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                                Zero-Copy Serialization at Scale: FlatBuffers vs Protobuf in 100GbE Networks
+                            </h3>
+                        </a>
+
+                        <p class="mt-1.5 text-neutral-600 dark:text-neutral-400 text-sm leading-relaxed line-clamp-2">
+                            When network bandwidth outpaces memory throughput, parsing protobuf wire format becomes the
+                            single largest contributor to CPU instruction stall cycles.
+                        </p>
+
+                        <div class="mt-3 flex items-center gap-3 text-xs text-neutral-500">
+                            <span
+                                class="px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">
+                                #systems
+                            </span>
+                            <span>6 min read</span>
+                        </div>
+                    </div>
+
+                    <div
+                        class="w-24 h-20 sm:w-36 sm:h-24 rounded-lg overflow-hidden shrink-0 bg-neutral-100 dark:bg-neutral-800">
+                        <img src="https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=400&h=260&q=80"
+                            alt="Networks"
+                            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            onerror="this.src='https://placehold.co/400x260/1a1a1a/ffffff?text=Networks'">
+                    </div>
+                </div>
+            </article>
+
+            <!-- STORY 3: [WITHOUT COVER IMAGE] -->
+            <article class="feed-card group pb-9 border-b border-neutral-200/70 dark:border-neutral-800/70"
+                data-category="databases">
+                <div class="flex items-center gap-2 mb-2">
+                    <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=60&h=60&q=80"
+                        alt="Sarah Lin" class="w-5 h-5 rounded-full object-cover">
+                    <span class="text-xs font-semibold text-neutral-900 dark:text-neutral-200">Sarah Lin</span>
+                    <span class="text-neutral-300 dark:text-neutral-700">•</span>
+                    <time class="text-xs text-neutral-500 font-mono">Oct 19, 2026</time>
+                </div>
+
+                <a href="#" class="block group">
+                    <h3
+                        class="article-serif text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white leading-snug tracking-tight group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                        The Death of the Two-Phase Commit: How Spanner and Multi-Raft Redefined ACID
+                    </h3>
+                </a>
+
+                <p class="mt-2 text-neutral-600 dark:text-neutral-400 text-sm leading-relaxed">
+                    Two-phase commit was conceived when network partitions were catastrophic exceptions. In modern
+                    distributed cloud topologies, latency spikes are continuous realities. By combining hardware atomic
+                    clocks with pipelined quorum leases, modern storage engines achieve serializable isolation without
+                    global write locks.
+                </p>
+
+                <!-- Curated Feature Bullets -->
+                <div class="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                    <span
+                        class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-neutral-100 dark:bg-neutral-800/80 text-neutral-700 dark:text-neutral-300 font-mono text-[11px]">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> TrueTime API
+                    </span>
+                    <span
+                        class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-neutral-100 dark:bg-neutral-800/80 text-neutral-700 dark:text-neutral-300 font-mono text-[11px]">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Multi-Paxos Leases
+                    </span>
+                    <span
+                        class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-neutral-100 dark:bg-neutral-800/80 text-neutral-700 dark:text-neutral-300 font-mono text-[11px]">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Zero Global Locks
+                    </span>
+                </div>
+
+                <div class="mt-3.5 flex items-center gap-3 text-xs text-neutral-500">
+                    <span
+                        class="px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">
+                        #databases
+                    </span>
+                    <span>9 min read</span>
+                </div>
+            </article>
+
+            <!-- STORY 4: [WITH COVER IMAGE] -->
+            <article class="feed-card group pb-9 border-b border-neutral-200/70 dark:border-neutral-800/70"
+                data-category="linux">
+                <div class="flex gap-5 sm:gap-6 items-start">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-2">
+                            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=60&h=60&q=80"
+                                alt="Liam Davies" class="w-5 h-5 rounded-full object-cover">
+                            <span class="text-xs font-semibold text-neutral-900 dark:text-neutral-200">Liam
+                                Davies</span>
+                            <span class="text-neutral-300 dark:text-neutral-700">•</span>
+                            <time class="text-xs text-neutral-500 font-mono">Oct 14, 2026</time>
+                        </div>
+
+                        <a href="#" class="block group">
+                            <h3
+                                class="article-serif text-lg sm:text-xl font-bold text-neutral-900 dark:text-white leading-snug tracking-tight group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                                eBPF in Production: Debugging Ephemeral TCP Drops at 4 Million Packets/sec
+                            </h3>
+                        </a>
+
+                        <p class="mt-1.5 text-neutral-600 dark:text-neutral-400 text-sm leading-relaxed line-clamp-2">
+                            Tracing kernel socket buffers without pausing packet flows: a retrospective on how kprobes
+                            and ringbuffers isolated subtle hardware checksum failures.
+                        </p>
+
+                        <div class="mt-3 flex items-center gap-3 text-xs text-neutral-500">
+                            <span
+                                class="px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">
+                                #linux
+                            </span>
+                            <span>14 min read</span>
+                        </div>
+                    </div>
+
+                    <div
+                        class="w-24 h-20 sm:w-36 sm:h-24 rounded-lg overflow-hidden shrink-0 bg-neutral-100 dark:bg-neutral-800">
+                        <img src="https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=400&h=260&q=80"
+                            alt="Linux Kernel eBPF"
+                            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            onerror="this.src='https://placehold.co/400x260/1a1a1a/ffffff?text=eBPF'">
+                    </div>
+                </div>
+            </article>
+
+            <!-- STORY 5: [WITHOUT COVER IMAGE] -->
+            <article class="feed-card group pb-9 border-b border-neutral-200/70 dark:border-neutral-800/70"
+                data-category="rust">
+                <div class="flex items-center gap-2 mb-2">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=60&h=60&q=80"
+                        alt="Elena Vance" class="w-5 h-5 rounded-full object-cover">
+                    <span class="text-xs font-semibold text-neutral-900 dark:text-neutral-200">Elena Vance</span>
+                    <span class="text-neutral-300 dark:text-neutral-700">•</span>
+                    <time class="text-xs text-neutral-500 font-mono">Sep 28, 2026</time>
+                </div>
+
+                <a href="#" class="block group">
+                    <h3
+                        class="article-serif text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white leading-snug tracking-tight group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                        Why We Rewrite Everything in Rust: 2 Years Later in Production
+                    </h3>
+                </a>
+
+                <p class="mt-2 text-neutral-600 dark:text-neutral-400 text-sm leading-relaxed">
+                    An honest retrospective on productivity, compile times, memory footprints, and recruiting challenges
+                    after replacing our C++ and Go backends with a unified Rust micro-kernel ecosystem.
+                </p>
+
+                <div class="mt-3.5 flex items-center gap-3 text-xs text-neutral-500">
+                    <span
+                        class="px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">
+                        #rust
+                    </span>
+                    <span>7 min read</span>
+                </div>
+            </article>
+
+        </section>
+
+        <!-- Load More Stories Button -->
+        <div class="pt-6 text-center">
+            <button id="loadMoreBtn"
+                class="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-full border border-neutral-300 dark:border-neutral-700 text-xs font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
+                <span id="loadMoreText">Load older stories</span>
+                <svg id="loadMoreSpinner" class="w-3.5 h-3.5 animate-spin hidden" viewBox="0 0 24 24" fill="none">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+            </button>
+        </div>
+
+    </main>
+
+    <!-- Minimalist Bottom Footer -->
+    <footer
+        class="border-t border-neutral-200 dark:border-neutral-800 py-8 bg-neutral-100/40 dark:bg-surface-darker text-neutral-500 text-xs font-mono">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
+                <span>Independent editorial engineering log. Clean & minimal reading.</span>
+            </div>
+            <div class="flex items-center gap-5">
+                <a href="#" class="hover:text-neutral-900 dark:hover:text-white transition-colors">Archive</a>
+                <a href="#" class="hover:text-neutral-900 dark:hover:text-white transition-colors">Atom RSS</a>
+                <a href="#" class="hover:text-neutral-900 dark:hover:text-white transition-colors">GitHub</a>
+                <a href="#" class="hover:text-neutral-900 dark:hover:text-white transition-colors">Privacy</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Spotlight Search Modal (⌘K) -->
+    <div id="searchModal"
+        class="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 hidden flex items-start justify-center pt-24 px-4">
+        <div
+            class="bg-white dark:bg-surface-cardDark border border-neutral-200 dark:border-neutral-700/80 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
+            <div class="p-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-3">
+                <svg class="w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input id="searchInputField" type="text" placeholder="Search architecture, systems, Rust..."
+                    class="w-full bg-transparent text-sm focus:outline-hidden text-neutral-900 dark:text-white placeholder:text-neutral-400">
+                <span
+                    class="text-[11px] font-mono text-neutral-400 border border-neutral-300 dark:border-neutral-700 px-1.5 py-0.5 rounded">ESC</span>
+            </div>
+            <div class="p-3 text-xs text-neutral-500">
+                <p class="font-semibold text-neutral-400 uppercase tracking-wider mb-2 font-mono text-[10px]">Filter by
+                    keywords</p>
+                <div class="flex flex-wrap gap-1.5">
+                    <span
+                        class="search-tag px-2.5 py-1 bg-neutral-100 dark:bg-neutral-800 hover:bg-emerald-50 hover:text-emerald-600 rounded-md cursor-pointer transition-colors">Raft
+                        Consensus</span>
+                    <span
+                        class="search-tag px-2.5 py-1 bg-neutral-100 dark:bg-neutral-800 hover:bg-emerald-50 hover:text-emerald-600 rounded-md cursor-pointer transition-colors">Zero-Copy
+                        Rust</span>
+                    <span
+                        class="search-tag px-2.5 py-1 bg-neutral-100 dark:bg-neutral-800 hover:bg-emerald-50 hover:text-emerald-600 rounded-md cursor-pointer transition-colors">eBPF
+                        Packet Tracing</span>
+                    <span
+                        class="search-tag px-2.5 py-1 bg-neutral-100 dark:bg-neutral-800 hover:bg-emerald-50 hover:text-emerald-600 rounded-md cursor-pointer transition-colors">Memory
+                        Ordering</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Message Box -->
+    <div id="toastMessage"
+        class="fixed bottom-6 right-6 z-50 bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 px-4 py-2.5 rounded-xl shadow-xl text-xs font-medium flex items-center gap-2 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        <svg class="w-4 h-4 text-emerald-400 dark:text-emerald-600" fill="none" stroke="currentColor"
+            viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        <span id="toastText">Action completed</span>
+    </div>
+
+    <!-- Frontpage JavaScript Logic -->
+    <script>
+        // 1. Toast Notification Helper
+        function showToast(message) {
+            const toast = document.getElementById('toastMessage');
+            const toastText = document.getElementById('toastText');
+            toastText.innerText = message;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+                toast.classList.remove('translate-y-0', 'opacity-100');
+            }, 2500);
+        }
+
+        // 2. Dark / Light Theme Controller
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+        function initTheme() {
+            if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+        initTheme();
+
+        themeToggleBtn.addEventListener('click', () => {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+                showToast('Light mode active');
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+                showToast('Dark mode active');
+            }
+        });
+
+        // 3. Live Hashtag Filter Pills
+        const filterButtons = document.querySelectorAll('.topic-filter-btn');
+        const feedCards = document.querySelectorAll('.feed-card');
+
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Reset inactive styles
+                filterButtons.forEach(b => {
+                    b.className = 'topic-filter-btn px-3 py-1 rounded-full whitespace-nowrap text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 transition-colors';
+                });
+                // Set active style
+                btn.className = 'topic-filter-btn px-3 py-1 rounded-full whitespace-nowrap bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-semibold transition-colors';
+
+                const selectedTopic = btn.getAttribute('data-topic');
+                feedCards.forEach(card => {
+                    const cardCat = card.getAttribute('data-category');
+                    if (selectedTopic === 'all' || cardCat === selectedTopic) {
+                        card.style.display = 'block';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            });
+        });
+
+        // 4. Load More Stories Simulation (without claps or responses)
+        const loadMoreBtn = document.getElementById('loadMoreBtn');
+        const loadMoreText = document.getElementById('loadMoreText');
+        const loadMoreSpinner = document.getElementById('loadMoreSpinner');
+        const storiesFeed = document.getElementById('storiesFeed');
+
+        let pageLoaded = false;
+        loadMoreBtn.addEventListener('click', () => {
+            if (pageLoaded) {
+                showToast('All stories loaded');
+                return;
+            }
+            loadMoreText.classList.add('hidden');
+            loadMoreSpinner.classList.remove('hidden');
+
+            setTimeout(() => {
+                loadMoreText.classList.remove('hidden');
+                loadMoreSpinner.classList.add('hidden');
+                pageLoaded = true;
+
+                const newPost = document.createElement('article');
+                newPost.className = 'feed-card group pb-9 border-b border-neutral-200/70 dark:border-neutral-800/70';
+                newPost.setAttribute('data-category', 'performance');
+                newPost.innerHTML = `
+          <div class="flex items-center gap-2 mb-2">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=60&h=60&q=80" alt="Elena Vance" class="w-5 h-5 rounded-full object-cover">
+            <span class="text-xs font-semibold text-neutral-900 dark:text-neutral-200">Elena Vance</span>
+            <span class="text-neutral-300 dark:text-neutral-700">•</span>
+            <time class="text-xs text-neutral-500 font-mono">Sep 18, 2026</time>
+          </div>
+          <a href="#" class="block group">
+            <h3 class="article-serif text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white leading-snug tracking-tight group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+              SIMD Instructions in Modern Parsers: Accelerating UTF-8 Validation
+            </h3>
+          </a>
+          <p class="mt-2 text-neutral-600 dark:text-neutral-400 text-sm leading-relaxed">
+            How AVX-512 and ARM NEON registers vectorize byte validation down to single-cycle throughput per cacheline.
+          </p>
+          <div class="mt-3.5 flex items-center gap-3 text-xs text-neutral-500">
+            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">#performance</span>
+            <span>5 min read</span>
+          </div>
+        `;
+
+                storiesFeed.appendChild(newPost);
+                loadMoreBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                loadMoreText.innerText = 'You have reached the end';
+                showToast('Loaded 1 archive essay');
+            }, 700);
+        });
+
+        // 5. Search Modal Logic (⌘K & ESC)
+        const searchModal = document.getElementById('searchModal');
+        const searchTriggerBtn = document.getElementById('searchTriggerBtn');
+        const searchInputField = document.getElementById('searchInputField');
+
+        function openSearch() {
+            searchModal.classList.remove('hidden');
+            setTimeout(() => searchInputField.focus(), 50);
+        }
+        function closeSearch() {
+            searchModal.classList.add('hidden');
+        }
+
+        searchTriggerBtn.addEventListener('click', openSearch);
+        window.addEventListener('keydown', (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                searchModal.classList.contains('hidden') ? openSearch() : closeSearch();
+            }
+            if (e.key === 'Escape') closeSearch();
+        });
+        searchModal.addEventListener('click', (e) => {
+            if (e.target === searchModal) closeSearch();
+        });
+
+        document.querySelectorAll('.search-tag').forEach(tag => {
+            tag.addEventListener('click', () => {
+                searchInputField.value = tag.innerText;
+                showToast(`Searching for "${tag.innerText}"`);
+                closeSearch();
+            });
+        });
+    </script>
+
+</body>
+
+</html>

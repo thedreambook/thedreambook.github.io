@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Building a Fault-Tolerant Distributed Consensus Engine in Rust — The Distributed Log</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                        serif: ['Newsreader', 'Georgia', 'Cambria', 'serif'],
+                        mono: ['JetBrains Mono', 'Fira Code', 'Menlo', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#ecfdf5',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                        },
+                        surface: {
+                            light: '#ffffff',
+                            paper: '#faf9f6',
+                            dark: '#121212',
+                            darker: '#0a0a0a',
+                            cardDark: '#1a1a1a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts: Inter, Newsreader, JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap"
+        rel="stylesheet">
+
+    <style>
+        /* Smooth theme transitions */
+        * {
+            transition: background-color 0.2s ease, border-color 0.2s ease, color 0.15s ease;
+        }
+
+        /* Medium-grade typography styles */
+        .article-serif {
+            font-family: 'Newsreader', Georgia, Cambria, serif;
+        }
+
+        .article-sans {
+            font-family: 'Inter', -apple-system, sans-serif;
+        }
+
+        /* Clap float badge animation */
+        @keyframes floatUpFade {
+            0% {
+                opacity: 1;
+                transform: translate(-50%, 0) scale(0.9);
+            }
+
+            50% {
+                opacity: 1;
+                transform: translate(-50%, -24px) scale(1.15);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -48px) scale(1);
+            }
+        }
+
+        .animate-clap-float {
+            animation: floatUpFade 0.75s ease-out forwards;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.4);
+            border-radius: 9999px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(156, 163, 175, 0.7);
+        }
+    </style>
+</head>
+
+<body
+    class="bg-[#fafafa] dark:bg-surface-dark text-neutral-800 dark:text-[#e4e4e7] antialiased selection:bg-emerald-500/20 selection:text-emerald-900 dark:selection:text-emerald-300 min-h-screen relative flex flex-col font-sans">
+
+    <!-- Pinned Subtle Reading Progress Bar (2px) -->
+    <div class="fixed top-0 left-0 w-full h-[2px] bg-transparent z-50 pointer-events-none">
+        <div id="readingProgress"
+            class="h-full bg-emerald-600 dark:bg-emerald-400 w-0 transition-all duration-75 ease-out shadow-[0_0_8px_rgba(16,185,129,0.5)]">
+        </div>
+    </div>
+
+    <!-- Minimalist Sticky Header -->
+    <header
+        class="sticky top-0 w-full bg-[#fafafa]/90 dark:bg-surface-dark/90 backdrop-blur-md border-b border-neutral-200/70 dark:border-neutral-800/80 z-40">
+        <div class="max-w-4xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
+
+            <!-- Brand & Publication Name -->
+            <a href="#" class="flex items-center gap-2.5 group">
+                <div
+                    class="w-8 h-8 rounded-lg bg-neutral-900 dark:bg-white flex items-center justify-center text-white dark:text-neutral-900 font-mono font-bold text-base shadow-xs group-hover:scale-105 transition-transform">
+                    λ
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-sm font-bold tracking-tight text-neutral-900 dark:text-white leading-none">The
+                        Distributed Log</span>
+                    <span
+                        class="text-[10px] text-neutral-500 dark:text-neutral-400 font-mono tracking-wider">Engineering</span>
+                </div>
+            </a>
+
+            <!-- Clean Actions: Search, Theme Toggle, User Profile -->
+            <div class="flex items-center gap-2 sm:gap-3">
+                <!-- Search Trigger Button -->
+                <button id="searchTriggerBtn"
+                    class="flex items-center gap-2 px-3 py-1.5 rounded-full text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 text-xs transition-colors"
+                    title="Search articles (⌘K)">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <span class="hidden sm:inline font-mono text-[11px] opacity-70">⌘K</span>
+                </button>
+
+                <!-- Dark / Light Theme Toggle -->
+                <button id="themeToggleBtn"
+                    class="p-2 rounded-full text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 transition-colors"
+                    aria-label="Toggle Theme">
+                    <svg id="themeIconSun" class="w-4 h-4 hidden dark:block text-amber-400" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    <svg id="themeIconMoon" class="w-4 h-4 block dark:hidden text-neutral-600" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                    </svg>
+                </button>
+
+                <div class="h-4 w-px bg-neutral-200 dark:bg-neutral-800 mx-0.5"></div>
+
+                <!-- User Profile Avatar -->
+                <a href="#" class="flex items-center gap-2 group">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&h=80&q=80"
+                        alt="Profile"
+                        class="w-7 h-7 rounded-full object-cover ring-1 ring-neutral-300 dark:ring-neutral-700 group-hover:ring-emerald-500 transition-all"
+                        onerror="this.src='https://placehold.co/80x80/262626/ffffff?text=U'">
+                </a>
+            </div>
+
+        </div>
+    </header>
+
+    <!-- Focused Reading Canvas (Centered ~720px max-width) -->
+    <main class="flex-grow w-full max-w-[720px] mx-auto px-5 sm:px-6 pt-12 pb-20">
+
+        <!-- Topic Pill -->
+        <div class="mb-4">
+            <span
+                class="inline-block text-[11px] font-mono font-semibold tracking-wider text-emerald-700 dark:text-emerald-400 uppercase bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800/40">
+                SYSTEMS ARCHITECTURE
+            </span>
+        </div>
+
+        <!-- Expressive Editorial Headline -->
+        <h1
+            class="text-3xl sm:text-4xl md:text-[42px] font-bold tracking-tight text-neutral-900 dark:text-white leading-[1.18] mb-4">
+            Building a Fault-Tolerant Distributed Consensus Engine in Rust
+        </h1>
+
+        <!-- Subtitle / Dek -->
+        <p class="text-lg sm:text-xl text-neutral-600 dark:text-neutral-300 font-normal leading-relaxed mb-7">
+            How we designed an asynchronous Raft-based state machine that achieves sub-millisecond commit quorums and
+            250,000 requests per second with strict zero-copy concurrency.
+        </p>
+
+        <!-- Clean Author Metadata Bar (No Display Settings, No Listen Button, No Bookmark) -->
+        <div
+            class="flex items-center justify-between py-4 border-y border-neutral-200/80 dark:border-neutral-800/80 mb-10">
+            <div class="flex items-center gap-3">
+                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&h=120&q=80"
+                    alt="Elena Vance" class="w-11 h-11 rounded-full object-cover ring-2 ring-emerald-500/20"
+                    onerror="this.src='https://placehold.co/120x120/1a1a1a/ffffff?text=EV'">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Elena Vance</span>
+                        <span class="text-neutral-300 dark:text-neutral-700">•</span>
+                        <button id="authorFollowBtn"
+                            class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors">
+                            Follow
+                        </button>
+                    </div>
+                    <p
+                        class="text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5 pt-0.5 font-sans">
+                        <time datetime="2026-11-02">Nov 2, 2026</time>
+                        <span>•</span>
+                        <span>8 min read</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Article Content (Editorial Newsreader Serif, Line Height 1.8) -->
+        <article class="article-serif text-[19px] leading-[1.8] text-neutral-800 dark:text-neutral-200 space-y-7">
+
+            <!-- Lead Paragraph -->
+            <p
+                class="text-xl sm:text-[21px] leading-relaxed font-normal text-neutral-900 dark:text-neutral-100 first-letter:text-5xl first-letter:font-bold first-letter:mr-2.5 first-letter:float-left first-letter:leading-none first-letter:text-emerald-600 dark:first-letter:text-emerald-400">
+                When building fault-tolerant storage engines, developers inevitably collide with the immutable laws of
+                network physics: packet serialization overhead, disk sync latency, and the coordinator bottlenecks of
+                consensus protocols. For decades, the industry accepted that linearizable consensus meant sacrificing
+                raw throughput.
+            </p>
+
+            <p>
+                During our recent rebuild of Synapse’s transactional log cluster, we challenged the conventional
+                assumption that <code
+                    class="px-1.5 py-0.5 rounded text-[15px] font-mono bg-neutral-100 dark:bg-neutral-800 text-emerald-700 dark:text-emerald-300 font-semibold border border-neutral-200 dark:border-neutral-700/60">Raft</code>
+                must inherently bottleneck database operations. By leveraging Rust’s strict ownership semantics,
+                memory-mapped append logs, and an asynchronous pipeline model, we pushed quorum-acknowledged commits to
+                <strong>250,000 IOPS per single cluster group</strong>.
+            </p>
+
+            <!-- Section Heading -->
+            <h2
+                class="text-2xl sm:text-[28px] font-bold font-sans tracking-tight text-neutral-900 dark:text-white pt-6 mt-8 border-t border-neutral-100 dark:border-neutral-800/80">
+                Leader Election & Log Replication Architecture
+            </h2>
+
+            <p>
+                In traditional sequential Raft, heartbeats, candidate election ballots, and log entry dispatches contend
+                for a unified event loop. In high-traffic scenarios, delayed disk flushes can cause follower nodes to
+                falsely assume the leader is dead, prompting disruptive election churn.
+            </p>
+
+            <!-- Technical Architecture SVG Diagram (Leader Election & Log Replication) -->
+            <figure class="my-8">
+                <div
+                    class="bg-white dark:bg-[#161616] border border-neutral-200 dark:border-neutral-800 rounded-xl p-6 overflow-hidden shadow-xs">
+                    <div
+                        class="flex items-center justify-between pb-4 mb-4 border-b border-neutral-100 dark:border-neutral-800 text-xs font-mono text-neutral-500">
+                        <span>FIGURE 1: LEADER ELECTION & LOG REPLICATION PIPELINE</span>
+                        <span class="text-emerald-600 dark:text-emerald-400 font-medium">Rust Tokio Actor Model</span>
+                    </div>
+
+                    <svg viewBox="0 0 800 250" class="w-full h-auto text-neutral-800 dark:text-neutral-200" fill="none"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <!-- Grid pattern -->
+                        <pattern id="diag-grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                            <circle cx="2" cy="2" r="1" fill="currentColor"
+                                class="text-neutral-200 dark:text-neutral-800" />
+                        </pattern>
+                        <rect width="800" height="250" fill="url(#diag-grid)" opacity="0.5" />
+
+                        <!-- Node 1: Candidate / Leader Engine -->
+                        <g transform="translate(30, 25)">
+                            <rect width="240" height="200" rx="10"
+                                class="fill-white dark:fill-neutral-900 stroke-emerald-500/80" stroke-width="2" />
+                            <text x="120" y="32" text-anchor="middle"
+                                class="font-sans font-bold text-sm fill-neutral-900 dark:fill-white">Node A (Active
+                                Leader)</text>
+                            <text x="120" y="48" text-anchor="middle"
+                                class="font-mono text-[10px] fill-emerald-600 dark:fill-emerald-400">Term: 42 •
+                                Monotonic Clock</text>
+
+                            <!-- Subcomponents inside Leader -->
+                            <rect x="20" y="65" width="200" height="34" rx="5"
+                                class="fill-neutral-50 dark:fill-neutral-800 stroke-neutral-200 dark:stroke-neutral-700" />
+                            <text x="30" y="86"
+                                class="font-mono text-xs font-semibold fill-neutral-900 dark:fill-neutral-100">Election
+                                Heartbeat Timer</text>
+                            <text x="210" y="86" text-anchor="end"
+                                class="font-mono text-[10px] fill-neutral-400">150ms</text>
+
+                            <rect x="20" y="108" width="200" height="34" rx="5"
+                                class="fill-neutral-50 dark:fill-neutral-800 stroke-neutral-200 dark:stroke-neutral-700" />
+                            <text x="30" y="129"
+                                class="font-mono text-xs font-semibold fill-emerald-600 dark:fill-emerald-400">AppendEntries
+                                Dispatch</text>
+                            <text x="210" y="129" text-anchor="end"
+                                class="font-mono text-[10px] fill-neutral-400">io_uring</text>
+
+                            <rect x="20" y="150" width="200" height="34" rx="5"
+                                class="fill-emerald-50 dark:fill-emerald-950/40 stroke-emerald-500/40" />
+                            <text x="30" y="171"
+                                class="font-mono text-xs font-semibold fill-emerald-700 dark:fill-emerald-300">Fast
+                                Quorum Ledger</text>
+                            <text x="210" y="171" text-anchor="end"
+                                class="font-mono text-[10px] fill-emerald-600 dark:fill-emerald-400">3/5 Acks</text>
+                        </g>
+
+                        <!-- Arrows & Flow -->
+                        <!-- Arrow 1: Heartbeats & Logs -->
+                        <path d="M275 90 L480 70" class="stroke-emerald-500" stroke-width="2" stroke-dasharray="4 2" />
+                        <text x="375" y="70" class="font-mono text-[10px] fill-emerald-600 dark:fill-emerald-400"
+                            text-anchor="middle">AppendEntries / Heartbeats</text>
+
+                        <!-- Arrow 2: Fast Acknowledgment -->
+                        <path d="M480 180 L275 160" class="stroke-neutral-400 dark:stroke-neutral-600"
+                            stroke-width="1.5" />
+                        <text x="375" y="185" class="font-mono text-[10px] fill-neutral-500" text-anchor="middle">Quorum
+                            matchIndex ACKs</text>
+
+                        <!-- Followers Group -->
+                        <g transform="translate(490, 25)">
+                            <rect width="280" height="200" rx="10"
+                                class="fill-white dark:fill-neutral-900 stroke-neutral-300 dark:stroke-neutral-700"
+                                stroke-width="1.5" />
+                            <text x="140" y="32" text-anchor="middle"
+                                class="font-sans font-bold text-sm fill-neutral-900 dark:fill-white">Cluster Follower
+                                Quorum</text>
+                            <text x="140" y="48" text-anchor="middle"
+                                class="font-mono text-[10px] fill-neutral-400">State: Follower • Randomized
+                                Timeouts</text>
+
+                            <!-- Node B -->
+                            <rect x="20" y="65" width="240" height="34" rx="5"
+                                class="fill-neutral-50 dark:fill-neutral-800 stroke-neutral-200 dark:stroke-neutral-700" />
+                            <text x="32" y="86"
+                                class="font-mono text-xs fill-neutral-800 dark:fill-neutral-200 font-medium">Node B:
+                                MatchIndex = 148,920</text>
+                            <circle cx="245" cy="82" r="4" class="fill-emerald-500" />
+
+                            <!-- Node C -->
+                            <rect x="20" y="108" width="240" height="34" rx="5"
+                                class="fill-neutral-50 dark:fill-neutral-800 stroke-neutral-200 dark:stroke-neutral-700" />
+                            <text x="32" y="129"
+                                class="font-mono text-xs fill-neutral-800 dark:fill-neutral-200 font-medium">Node C:
+                                MatchIndex = 148,920</text>
+                            <circle cx="245" cy="125" r="4" class="fill-emerald-500" />
+
+                            <!-- Node D -->
+                            <rect x="20" y="150" width="240" height="34" rx="5"
+                                class="fill-neutral-50 dark:fill-neutral-800 stroke-neutral-200 dark:stroke-neutral-700" />
+                            <text x="32" y="171"
+                                class="font-mono text-xs fill-neutral-800 dark:fill-neutral-200 font-medium">Node D:
+                                MatchIndex = 148,918</text>
+                            <circle cx="245" cy="167" r="4" class="fill-amber-500" />
+                        </g>
+                    </svg>
+                </div>
+                <figcaption class="mt-3 text-center text-xs text-neutral-500 dark:text-neutral-400 font-sans">
+                    Figure 1. Architectural blueprint of concurrent leader heartbeats and pipelined log replication
+                    across quorum nodes.
+                </figcaption>
+            </figure>
+
+            <!-- Styled Callout Box -->
+            <div
+                class="my-6 p-4 sm:p-5 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-500/30 flex gap-3.5 items-start">
+                <div class="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <div class="font-sans text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed">
+                    <strong class="font-semibold text-neutral-900 dark:text-white block mb-0.5">Key Invariant: Raft Log
+                        Matching Property</strong>
+                    If two separate nodes contain an entry with the identical index and term, then both logs are
+                    guaranteed to be identical in all entries up through the given index. Our engine relies on atomic
+                    monotonic sequence counters to eliminate lock acquisition on the replication critical path.
+                </div>
+            </div>
+
+            <!-- Technical Blockquote -->
+            <blockquote
+                class="border-l-[3px] border-emerald-600 dark:border-emerald-500 pl-5 my-7 italic text-neutral-700 dark:text-neutral-300 font-serif text-[20px]">
+                "If you wait for an fsync confirmation before initiating the next network packet broadcast, you are
+                leaving 94% of your hardware’s PCIe and 100GbE bandwidth completely dormant."
+            </blockquote>
+
+            <!-- Section Heading -->
+            <h2
+                class="text-2xl sm:text-[28px] font-bold font-sans tracking-tight text-neutral-900 dark:text-white pt-6 mt-8 border-t border-neutral-100 dark:border-neutral-800/80">
+                Asynchronous Log Replication Pipeline
+            </h2>
+
+            <p>
+                To decouple replication network roundtrips from disk latency, we decoupled the commit state machine into
+                three isolated actor channels: Ingress Batching, RPC Broadcast, and Persistence Commit. Here is the
+                distilled implementation of our pipelined batch aggregator:
+            </p>
+
+            <!-- Rust Code Block with File Path & One-Click Copy -->
+            <div
+                class="my-6 rounded-xl overflow-hidden border border-neutral-300/80 dark:border-neutral-800 bg-[#18181b] text-neutral-200 font-mono text-[13.5px] leading-relaxed shadow-lg">
+
+                <div
+                    class="flex items-center justify-between px-4 py-2.5 bg-[#202024] border-b border-neutral-700/60 text-xs select-none">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-red-500/80"></span>
+                        <span class="w-2.5 h-2.5 rounded-full bg-amber-500/80"></span>
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500/80"></span>
+                        <span class="ml-2 font-mono text-neutral-400">src/consensus/raft.rs</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-[11px] uppercase tracking-wider text-emerald-400 font-semibold">Rust</span>
+                        <button
+                            class="copy-code-btn flex items-center gap-1.5 px-2.5 py-1 rounded bg-neutral-700/60 hover:bg-neutral-600/80 text-neutral-200 transition-colors"
+                            data-target="code-block-consensus">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                            <span>Copy</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="p-4 overflow-x-auto">
+                    <pre id="code-block-consensus" class="text-neutral-100 font-mono"><code><span class="text-purple-400">pub struct</span> <span class="text-yellow-300">RaftConsensusEngine</span>&lt;T: <span class="text-teal-300">Payload</span>&gt; {
+    ingress_rx: mpsc::<span class="text-teal-300">Receiver</span>&lt;LogEntry&lt;T&gt;&gt;,
+    wal_tx: mpsc::<span class="text-teal-300">Sender</span>&lt;BatchPayload&lt;T&gt;&gt;,
+    cluster_peers: Arc&lt;[PeerChannel]&gt;,
+    commit_index: Arc&lt;<span class="text-teal-300">AtomicU64</span>&gt;,
+}
+
+<span class="text-purple-400">impl</span>&lt;T: <span class="text-teal-300">Payload</span>&gt; <span class="text-yellow-300">RaftConsensusEngine</span>&lt;T&gt; {
+    <span class="text-neutral-500">/// Drives non-blocking pipeline iteration with microsecond batching</span>
+    <span class="text-purple-400">pub async fn</span> <span class="text-blue-400">process_replication_stream</span>(&amp;<span class="text-purple-400">mut self</span>) -&gt; Result&lt;(), RaftError&gt; {
+        <span class="text-purple-400">let mut</span> buffer = <span class="text-teal-300">Vec</span>::with_capacity(<span class="text-orange-300">1024</span>);
+
+        <span class="text-purple-400">while</span> <span class="text-purple-400">let</span> <span class="text-teal-300">Some</span>(entry) = <span class="text-purple-400">self</span>.ingress_rx.recv().<span class="text-purple-400">await</span> {
+            buffer.push(entry);
+
+            <span class="text-neutral-500">// Aggregate batch opportunistically under 40 microseconds</span>
+            <span class="text-purple-400">while</span> buffer.len() &lt; <span class="text-orange-300">1024</span> {
+                <span class="text-purple-400">match</span> <span class="text-purple-400">self</span>.ingress_rx.try_recv() {
+                    <span class="text-teal-300">Ok</span>(item) =&gt; buffer.push(item),
+                    <span class="text-teal-300">Err</span>(_) =&gt; <span class="text-purple-400">break</span>,
+                }
+            }
+
+            <span class="text-neutral-500">// Broadcast to peers concurrently without awaiting disk fsync</span>
+            <span class="text-purple-400">let</span> batch = <span class="text-teal-300">Arc</span>::new(buffer.split_off(<span class="text-orange-300">0</span>));
+            <span class="text-purple-400">self</span>.broadcast_append_entries(batch.clone()).<span class="text-purple-400">await</span>?;
+            <span class="text-purple-400">self</span>.wal_tx.send(BatchPayload(batch)).<span class="text-purple-400">await</span>?;
+        }
+        <span class="text-teal-300">Ok</span>(())
+    }
+}</code></pre>
+                </div>
+            </div>
+
+            <!-- Section Heading -->
+            <h2
+                class="text-2xl sm:text-[28px] font-bold font-sans tracking-tight text-neutral-900 dark:text-white pt-6 mt-8 border-t border-neutral-100 dark:border-neutral-800/80">
+                Benchmark Comparison
+            </h2>
+
+            <p>
+                We provisioned three dedicated bare-metal nodes connected over a 25Gbps intra-rack switch. Under
+                continuous write loads of 1KB transactional entries, the pipelined Rust architecture demonstrated orders
+                of magnitude improvement in throughput and tail latency:
+            </p>
+
+            <!-- Benchmark Table -->
+            <div
+                class="my-6 overflow-x-auto rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-surface-cardDark shadow-xs">
+                <table class="w-full text-left text-sm border-collapse font-sans">
+                    <thead>
+                        <tr
+                            class="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50 text-neutral-600 dark:text-neutral-400 font-mono text-xs uppercase">
+                            <th class="p-3.5 sm:px-5">Implementation Model</th>
+                            <th class="p-3.5 sm:px-5">Throughput (Ops/sec)</th>
+                            <th class="p-3.5 sm:px-5">p99 Latency</th>
+                            <th class="p-3.5 sm:px-5">CPU Overhead</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-neutral-200 dark:divide-neutral-800/60 font-sans">
+                        <tr class="hover:bg-neutral-50/50 dark:hover:bg-neutral-800/30 transition-colors">
+                            <td class="p-3.5 sm:px-5 font-medium text-neutral-900 dark:text-neutral-200">Naive
+                                Sequential Raft</td>
+                            <td class="p-3.5 sm:px-5 font-mono text-neutral-600 dark:text-neutral-400">18,400</td>
+                            <td class="p-3.5 sm:px-5 font-mono text-rose-600 dark:text-rose-400">22.4 ms</td>
+                            <td class="p-3.5 sm:px-5 text-neutral-600 dark:text-neutral-400">18% (I/O blocked)</td>
+                        </tr>
+                        <tr class="hover:bg-neutral-50/50 dark:hover:bg-neutral-800/30 transition-colors">
+                            <td class="p-3.5 sm:px-5 font-medium text-neutral-900 dark:text-neutral-200">Async Coarse
+                                Batching</td>
+                            <td class="p-3.5 sm:px-5 font-mono text-neutral-600 dark:text-neutral-400">92,000</td>
+                            <td class="p-3.5 sm:px-5 font-mono text-amber-600 dark:text-amber-400">11.8 ms</td>
+                            <td class="p-3.5 sm:px-5 text-neutral-600 dark:text-neutral-400">42% (Context switches)</td>
+                        </tr>
+                        <tr
+                            class="bg-emerald-50/50 dark:bg-emerald-950/20 font-medium hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors">
+                            <td class="p-3.5 sm:px-5 text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+                                <span>Pipelined Zero-Copy Rust</span>
+                                <span
+                                    class="px-1.5 py-0.5 rounded text-[10px] bg-emerald-600 text-white font-mono font-bold">WINNER</span>
+                            </td>
+                            <td class="p-3.5 sm:px-5 font-mono font-bold text-emerald-700 dark:text-emerald-400">254,120
+                            </td>
+                            <td class="p-3.5 sm:px-5 font-mono font-bold text-emerald-700 dark:text-emerald-400">0.82 ms
+                            </td>
+                            <td class="p-3.5 sm:px-5 text-neutral-700 dark:text-neutral-300">76% (Near-linear)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p class="pt-2">
+                Consensus algorithms need not be the performance anchor of modern distributed backends. When paired with
+                memory safety and zero-cost abstractions, linearizable state machines can remain fast, dependable, and
+                simple to reason about.
+            </p>
+
+        </article>
+
+        <!-- Post Article Tags -->
+        <div class="mt-12 pt-6 border-t border-neutral-200/80 dark:border-neutral-800/80 flex flex-wrap gap-2">
+            <a href="#"
+                class="px-3 py-1.5 rounded-full text-xs font-mono bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors">#Rust</a>
+            <a href="#"
+                class="px-3 py-1.5 rounded-full text-xs font-mono bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors">#DistributedSystems</a>
+            <a href="#"
+                class="px-3 py-1.5 rounded-full text-xs font-mono bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors">#Raft</a>
+            <a href="#"
+                class="px-3 py-1.5 rounded-full text-xs font-mono bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors">#DevOps</a>
+        </div>
+
+        <!-- Static Footer Interactions (Natural page flow, NOT floating) -->
+        <div
+            class="mt-8 py-5 border-y border-neutral-200/80 dark:border-neutral-800/80 flex items-center justify-between font-sans">
+
+            <!-- Claps + Responses Count -->
+            <div class="flex items-center gap-6">
+                <!-- Clap Interaction Button with Particle Effect -->
+                <div class="relative flex items-center">
+                    <button id="inlineClapBtn"
+                        class="group flex items-center gap-2 text-neutral-600 dark:text-neutral-400 hover:text-emerald-600 dark:hover:text-emerald-400 active:scale-95 transition-all"
+                        title="Clap for this article">
+                        <svg class="w-6 h-6 transition-transform group-hover:scale-110" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="1.75">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V4.5a1.5 1.5 0 113 0v5m0-5a1.5 1.5 0 013 0V11m-3-6a1.5 1.5 0 013 0v4.5" />
+                        </svg>
+                        <span id="inlineClapCount" class="text-sm font-medium font-mono">3.8K</span>
+                    </button>
+                    <div id="inlineClapBadge"
+                        class="hidden absolute -top-7 left-3 pointer-events-none text-xs font-bold text-emerald-600 dark:text-emerald-400 select-none">
+                        +1</div>
+                </div>
+
+                <!-- Jump to Comments Button -->
+                <a href="#responsesSection"
+                    class="flex items-center gap-2 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
+                    title="View discussion">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
+                            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                    <span id="responseHeaderCount" class="text-sm font-medium">42 responses</span>
+                </a>
+            </div>
+
+            <!-- Quick Share Button -->
+            <button id="inlineShareBtn"
+                class="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
+                title="Copy article link">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
+                        d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
+            </button>
+
+        </div>
+
+        <!-- Author Profile Expanded Card -->
+        <div
+            class="mt-12 p-6 rounded-2xl bg-neutral-100/70 dark:bg-surface-cardDark/60 border border-neutral-200/80 dark:border-neutral-800 flex flex-col sm:flex-row items-start gap-5">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=160&h=160&q=80"
+                alt="Elena Vance" class="w-16 h-16 rounded-full object-cover ring-2 ring-emerald-500/20"
+                onerror="this.src='https://placehold.co/160x160/1a1a1a/ffffff?text=EV'">
+            <div class="flex-1">
+                <div class="flex items-center justify-between mb-1">
+                    <div>
+                        <span class="text-xs font-mono uppercase text-neutral-400 block tracking-wider">Written
+                            by</span>
+                        <h4 class="text-lg font-bold text-neutral-900 dark:text-white">Elena Vance</h4>
+                    </div>
+                    <button
+                        class="author-follow-sync px-4 py-1.5 rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 text-xs font-medium hover:opacity-90 transition-opacity">
+                        Follow
+                    </button>
+                </div>
+                <p class="text-sm text-neutral-600 dark:text-neutral-300 mt-2 leading-relaxed">
+                    Staff Distributed Systems Engineer. Obsessed with high-throughput consensus protocols, asynchronous
+                    I/O primitives, memory layout optimizations, and Rust tooling.
+                </p>
+            </div>
+        </div>
+
+        <!-- Static Inline Responses / Comments Section -->
+        <section id="responsesSection" class="mt-16 pt-10 border-t border-neutral-200 dark:border-neutral-800">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold text-neutral-900 dark:text-white">Responses (42)</h3>
+            </div>
+
+            <!-- Add Response Input Box -->
+            <div
+                class="p-4 sm:p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-surface-cardDark shadow-xs mb-8">
+                <textarea id="commentTextarea" placeholder="What are your thoughts on Raft pipelining?"
+                    class="w-full text-sm bg-transparent resize-none focus:outline-hidden placeholder:text-neutral-400 text-neutral-800 dark:text-neutral-200 h-24"></textarea>
+                <div class="flex items-center justify-between pt-3 border-t border-neutral-100 dark:border-neutral-800">
+                    <span class="text-xs text-neutral-400 font-mono">Markdown supported</span>
+                    <button id="publishCommentBtn"
+                        class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full text-xs font-semibold transition-colors">
+                        Respond
+                    </button>
+                </div>
+            </div>
+
+            <!-- Comments Stream -->
+            <div id="commentsStream" class="space-y-6">
+
+                <!-- Comment 1 -->
+                <div
+                    class="p-5 rounded-xl border border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-surface-cardDark">
+                    <div class="flex items-center justify-between mb-2.5">
+                        <div class="flex items-center gap-3">
+                            <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&h=80&q=80"
+                                alt="Alex" class="w-8 h-8 rounded-full object-cover">
+                            <div>
+                                <span
+                                    class="text-xs font-bold text-neutral-900 dark:text-white block leading-tight">Alex
+                                    Rivera</span>
+                                <span class="text-[11px] text-neutral-400 font-mono">2 days ago</span>
+                            </div>
+                        </div>
+                        <button
+                            class="comment-clap-btn flex items-center gap-1.5 text-xs text-neutral-500 hover:text-emerald-600 dark:hover:text-emerald-400 font-mono px-2 py-1 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
+                            <span>👏</span> <span>18</span>
+                        </button>
+                    </div>
+                    <p class="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed font-sans">
+                        How do you handle follower recovery if an in-flight uncommitted pipeline batch gets interrupted
+                        midway? Do you issue a roll-forward rollback or rely strictly on matchIndex synchronization?
+                    </p>
+                </div>
+
+                <!-- Comment 2 -->
+                <div
+                    class="p-5 rounded-xl border border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-surface-cardDark">
+                    <div class="flex items-center justify-between mb-2.5">
+                        <div class="flex items-center gap-3">
+                            <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=80&h=80&q=80"
+                                alt="Devon" class="w-8 h-8 rounded-full object-cover">
+                            <div>
+                                <span
+                                    class="text-xs font-bold text-neutral-900 dark:text-white block leading-tight">Devon
+                                    Wright</span>
+                                <span class="text-[11px] text-neutral-400 font-mono">Yesterday</span>
+                            </div>
+                        </div>
+                        <button
+                            class="comment-clap-btn flex items-center gap-1.5 text-xs text-neutral-500 hover:text-emerald-600 dark:hover:text-emerald-400 font-mono px-2 py-1 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
+                            <span>👏</span> <span>34</span>
+                        </button>
+                    </div>
+                    <p class="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed font-sans">
+                        The benchmark table highlighting io_uring is golden. The kernel context switch penalty at 200k+
+                        ops is very real. Phenomenal breakdown!
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Minimalist Clean Footer -->
+    <footer
+        class="border-t border-neutral-200 dark:border-neutral-800 py-10 bg-neutral-100/50 dark:bg-surface-darker text-neutral-500 text-xs text-center font-mono">
+        <div class="max-w-4xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p>© 2026 The Distributed Log. Minimalist reading experience.</p>
+            <div class="flex items-center gap-4">
+                <a href="#" class="hover:underline">Privacy</a>
+                <a href="#" class="hover:underline">Terms</a>
+                <a href="#" class="hover:underline">RSS Feed</a>
+                <a href="#" class="hover:underline">System Status</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Spotlight Search Modal (⌘K) -->
+    <div id="searchModal"
+        class="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 hidden flex items-start justify-center pt-24 px-4">
+        <div
+            class="bg-white dark:bg-surface-cardDark border border-neutral-200 dark:border-neutral-700/80 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
+            <div class="p-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-3">
+                <svg class="w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input id="searchInputField" type="text" placeholder="Search architecture, systems, Rust..."
+                    class="w-full bg-transparent text-sm focus:outline-hidden text-neutral-900 dark:text-white placeholder:text-neutral-400">
+                <span
+                    class="text-[11px] font-mono text-neutral-400 border border-neutral-300 dark:border-neutral-700 px-1.5 py-0.5 rounded">ESC</span>
+            </div>
+            <div class="p-3 text-xs text-neutral-500">
+                <p class="font-semibold text-neutral-400 uppercase tracking-wider mb-2 font-mono text-[10px]">Popular
+                    Searches</p>
+                <div class="flex flex-wrap gap-1.5">
+                    <span
+                        class="px-2.5 py-1 bg-neutral-100 dark:bg-neutral-800 hover:bg-emerald-50 hover:text-emerald-600 rounded-md cursor-pointer transition-colors">Rust
+                        Async Internals</span>
+                    <span
+                        class="px-2.5 py-1 bg-neutral-100 dark:bg-neutral-800 hover:bg-emerald-50 hover:text-emerald-600 rounded-md cursor-pointer transition-colors">io_uring
+                        vs epoll</span>
+                    <span
+                        class="px-2.5 py-1 bg-neutral-100 dark:bg-neutral-800 hover:bg-emerald-50 hover:text-emerald-600 rounded-md cursor-pointer transition-colors">Consensus
+                        Quorums</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Bar -->
+    <div id="toastMessage"
+        class="fixed bottom-6 right-6 z-50 bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 px-4 py-2.5 rounded-xl shadow-xl text-xs font-medium flex items-center gap-2 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        <svg class="w-4 h-4 text-emerald-400 dark:text-emerald-600" fill="none" stroke="currentColor"
+            viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        <span id="toastText">Action completed</span>
+    </div>
+
+    <!-- Clean Interactive Script -->
+    <script>
+        // State
+        const state = {
+            claps: 3842,
+            myClaps: 0,
+            isFollowing: false,
+            responseCount: 42
+        };
+
+        // Toast helper
+        function showToast(message) {
+            const toast = document.getElementById('toastMessage');
+            const toastText = document.getElementById('toastText');
+            toastText.innerText = message;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+                toast.classList.remove('translate-y-0', 'opacity-100');
+            }, 2500);
+        }
+
+        // 1. Reading Progress Bar (2px top line)
+        const progressBar = document.getElementById('readingProgress');
+        window.addEventListener('scroll', () => {
+            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+            const scrollPos = window.scrollY;
+            const progress = Math.min(100, Math.max(0, (scrollPos / docHeight) * 100));
+            progressBar.style.width = progress + '%';
+        });
+
+        // 2. Theme Toggle & Persistence
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+        function initTheme() {
+            if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+        initTheme();
+
+        themeToggleBtn.addEventListener('click', () => {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+                showToast('Light mode active');
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+                showToast('Dark mode active');
+            }
+        });
+
+        // 3. Static Inline Clap Interaction
+        const inlineClapBtn = document.getElementById('inlineClapBtn');
+        const inlineClapCount = document.getElementById('inlineClapCount');
+        const inlineClapBadge = document.getElementById('inlineClapBadge');
+
+        inlineClapBtn.addEventListener('click', () => {
+            if (state.myClaps >= 50) {
+                showToast("Maximum 50 claps reached. Thank you!");
+                return;
+            }
+            state.claps++;
+            state.myClaps++;
+            inlineClapCount.innerText = (state.claps / 1000).toFixed(1) + 'K';
+
+            // Float animation
+            inlineClapBadge.classList.remove('hidden');
+            inlineClapBadge.classList.remove('animate-clap-float');
+            void inlineClapBadge.offsetWidth;
+            inlineClapBadge.classList.add('animate-clap-float');
+            setTimeout(() => {
+                inlineClapBadge.classList.add('hidden');
+            }, 750);
+        });
+
+        // 4. Author Follow Sync
+        const followButtons = document.querySelectorAll('#authorFollowBtn, .author-follow-sync');
+        followButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                state.isFollowing = !state.isFollowing;
+                followButtons.forEach(b => {
+                    b.innerText = state.isFollowing ? 'Following' : 'Follow';
+                    b.classList.toggle('opacity-70', state.isFollowing);
+                });
+                showToast(state.isFollowing ? 'Following Elena Vance' : 'Unfollowed author');
+            });
+        });
+
+        // 5. Code Copy Button with Visual Feedback
+        function copyTextFallback(text) {
+            const ta = document.createElement("textarea");
+            ta.value = text;
+            ta.style.position = "fixed";
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+                document.execCommand('copy');
+                showToast('Code copied to clipboard');
+            } catch (err) {
+                showToast('Unable to copy code');
+            }
+            document.body.removeChild(ta);
+        }
+
+        document.querySelectorAll('.copy-code-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetId = btn.getAttribute('data-target');
+                const code = document.getElementById(targetId).innerText;
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(code).then(() => showToast('Code copied to clipboard')).catch(() => copyTextFallback(code));
+                } else {
+                    copyTextFallback(code);
+                }
+
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = `
+          <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          <span class="text-emerald-400 font-semibold">Copied!</span>
+        `;
+                setTimeout(() => { btn.innerHTML = originalHTML; }, 2000);
+            });
+        });
+
+        // 6. Share Link
+        document.getElementById('inlineShareBtn').addEventListener('click', () => {
+            const url = window.location.href;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(() => showToast('Article link copied to clipboard')).catch(() => copyTextFallback(url));
+            } else {
+                copyTextFallback(url);
+            }
+        });
+
+        // 7. Inline Responses Posting & Interaction
+        const publishCommentBtn = document.getElementById('publishCommentBtn');
+        const commentTextarea = document.getElementById('commentTextarea');
+        const commentsStream = document.getElementById('commentsStream');
+        const responseHeaderCount = document.getElementById('responseHeaderCount');
+
+        publishCommentBtn.addEventListener('click', () => {
+            const text = commentTextarea.value.trim();
+            if (!text) return;
+
+            state.responseCount++;
+            responseHeaderCount.innerText = `${state.responseCount} responses`;
+
+            const commentCard = document.createElement('div');
+            commentCard.className = 'p-5 rounded-xl border border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-surface-cardDark animate-pulse';
+            commentCard.innerHTML = `
+        <div class="flex items-center justify-between mb-2.5">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs">You</div>
+            <div>
+              <span class="text-xs font-bold text-neutral-900 dark:text-white block leading-tight">You (Visiting Engineer)</span>
+              <span class="text-[11px] text-neutral-400 font-mono">Just now</span>
+            </div>
+          </div>
+          <button class="comment-clap-btn flex items-center gap-1.5 text-xs text-neutral-500 hover:text-emerald-600 dark:hover:text-emerald-400 font-mono px-2 py-1 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
+            <span>👏</span> <span>1</span>
+          </button>
+        </div>
+        <p class="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed font-sans">${text}</p>
+      `;
+            commentsStream.prepend(commentCard);
+            commentTextarea.value = '';
+            setTimeout(() => commentCard.classList.remove('animate-pulse'), 500);
+            showToast('Response published');
+        });
+
+        // Comment claps delegator
+        commentsStream.addEventListener('click', (e) => {
+            const clapBtn = e.target.closest('.comment-clap-btn');
+            if (clapBtn) {
+                const countSpan = clapBtn.querySelectorAll('span')[1];
+                let c = parseInt(countSpan.innerText, 10) || 0;
+                countSpan.innerText = c + 1;
+                clapBtn.classList.add('text-emerald-600', 'dark:text-emerald-400');
+            }
+        });
+
+        // 8. Search Modal Logic (⌘K & ESC)
+        const searchModal = document.getElementById('searchModal');
+        const searchTriggerBtn = document.getElementById('searchTriggerBtn');
+        const searchInputField = document.getElementById('searchInputField');
+
+        function openSearch() {
+            searchModal.classList.remove('hidden');
+            setTimeout(() => searchInputField.focus(), 50);
+        }
+        function closeSearch() {
+            searchModal.classList.add('hidden');
+        }
+
+        searchTriggerBtn.addEventListener('click', openSearch);
+        window.addEventListener('keydown', (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                searchModal.classList.contains('hidden') ? openSearch() : closeSearch();
+            }
+            if (e.key === 'Escape') closeSearch();
+        });
+        searchModal.addEventListener('click', (e) => {
+            if (e.target === searchModal) closeSearch();
+        });
+    </script>
+</body>
+
+</html>
