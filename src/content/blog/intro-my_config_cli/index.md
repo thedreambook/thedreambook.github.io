@@ -1,12 +1,13 @@
 ---
 title: '(ENG) Introducing myconfig CLI'
 description: "CLI to backup/restore configs to the remote repo"
-pubDate: "Nov 3 2026 11:00 AM"
+pubDate: "Nov 3 2026 11:30 AM"
 author: dreamoutbox
 heroImage: "../../../assets/fallback.png"
 tags:
   [
-    "rust",
+    "go",
+    "golang",
     "tools",
     "deploy",
     "vps",
