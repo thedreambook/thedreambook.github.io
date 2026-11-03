@@ -6,7 +6,7 @@ import Navbar from "./Navbar.astro";
 import Footer from "./Footer.astro";
 import SearchModal from "./SearchModal.astro";
 import Toast from "./Toast.astro";
-import { AUTHOR_NAME, AUTHOR_AVATAR } from "../consts";
+import { getAuthorProfile } from "../consts";
 import { calculateReadingTime } from "../helpers/readingTime";
 
 interface Props {
@@ -67,6 +67,7 @@ const uniqueTags = Array.from(
         allPosts.map((post) => {
           const categoryString = (post.data.tags ?? []).join(" ").toLowerCase();
           const hasImage = Boolean(post.data.heroImage);
+          const authorProfile = getAuthorProfile(post.data.author);
 
           return (
             <article
@@ -78,12 +79,12 @@ const uniqueTags = Array.from(
                   <!-- Author Meta -->
                   <div class="flex items-center gap-2 mb-2">
                     <img
-                      src={AUTHOR_AVATAR}
-                      alt={AUTHOR_NAME}
+                      src={authorProfile.avatar}
+                      alt={authorProfile.name}
                       class="w-5 h-5 rounded-full object-cover"
                     />
                     <span class="text-xs font-semibold text-neutral-900 dark:text-neutral-200">
-                      {AUTHOR_NAME}
+                      {authorProfile.name}
                     </span>
                     <span class="text-neutral-300 dark:text-neutral-700">•</span>
                     <time class="text-xs text-neutral-500 font-mono">

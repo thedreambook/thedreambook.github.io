@@ -1,0 +1,50 @@
+---
+/**
+ * Component rendering the expanded author bio card at the end of a blog post.
+ */
+import type { AuthorProfile } from "../consts";
+
+interface Props {
+  author: AuthorProfile;
+}
+
+const { author } = Astro.props;
+---
+
+<div
+  class="mt-12 p-6 rounded-2xl bg-neutral-100/70 dark:bg-surface-cardDark/60 border border-neutral-200/80 dark:border-neutral-800 flex flex-col sm:flex-row items-start gap-5"
+>
+  <img
+    src={author.avatar}
+    alt={author.name}
+    class="w-16 h-16 rounded-full object-cover ring-2 ring-emerald-500/20"
+  />
+  <div class="flex-1">
+    <div class="flex items-center justify-between mb-1">
+      <div>
+        <span
+          class="text-xs font-mono uppercase text-neutral-400 block tracking-wider"
+        >
+          Written by
+        </span>
+        <h4 class="text-lg font-bold text-neutral-900 dark:text-white">
+          {author.name}
+        </h4>
+      </div>
+      <a
+        href={author.github}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="px-4 py-1.5 rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 text-xs font-medium hover:opacity-90 transition-opacity"
+      >
+        GitHub
+      </a>
+    </div>
+    <p
+      class="text-sm text-neutral-600 dark:text-neutral-300 mt-2 leading-relaxed"
+    >
+      {author.bio}
+    </p>
+  </div>
+</div>
+

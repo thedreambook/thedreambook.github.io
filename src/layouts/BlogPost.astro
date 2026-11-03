@@ -4,19 +4,34 @@ import type { CollectionEntry } from "astro:content";
 import BaseHead from "../components/BaseHead.astro";
 import Navbar from "../components/Navbar.astro";
 import Footer from "../components/Footer.astro";
-import FormattedDate from "../components/FormattedDate.astro";
+import AuthorMetadataBar from "../components/AuthorMetadataBar.astro";
+import AuthorCard from "../components/AuthorCard.astro";
 import SearchModal from "../components/SearchModal.astro";
 import Toast from "../components/Toast.astro";
-import { AUTHOR_NAME, AUTHOR_AVATAR, AUTHOR_BIO, SITE_TITLE } from "../consts";
+import {
+  SITE_TITLE,
+  getAuthorProfile,
+  type AuthorProfile,
+} from "../consts";
 import { calculateReadingTime } from "../helpers/readingTime";
 
 type Props = CollectionEntry<"blog">["data"] & {
   body?: string;
+  author?: string;
 };
 
-const { title, description, pubDate, updatedDate, heroImage, tags, body } =
-  Astro.props;
+const {
+  title,
+  description,
+  pubDate,
+  updatedDate,
+  heroImage,
+  tags,
+  body,
+  author,
+} = Astro.props;
 
+const authorProfile: AuthorProfile = getAuthorProfile(author);
 const readingTime = calculateReadingTime(body);
 const primaryTag = tags && tags.length > 0 ? tags[0] : "Article";
 ---
@@ -78,51 +93,12 @@ const primaryTag = tags && tags.length > 0 ? tags[0] : "Article";
       }
 
       <!-- Author Metadata Bar -->
-      <div
-        class="flex items-center justify-between py-4 border-y border-neutral-200/80 dark:border-neutral-800/80 mb-10"
-      >
-        <div class="flex items-center gap-3">
-          <img
-            src={AUTHOR_AVATAR}
-            alt={AUTHOR_NAME}
-            class="w-11 h-11 rounded-full object-cover ring-2 ring-emerald-500/20"
-          />
-          <div>
-            <div class="flex items-center gap-2">
-              <span
-                class="text-sm font-semibold text-neutral-900 dark:text-neutral-100"
-              >
-                {AUTHOR_NAME}
-              </span>
-              <span class="text-neutral-300 dark:text-neutral-700">•</span>
-              <a
-                href="https://github.com/wuttinanhi"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
-              >
-                GitHub
-              </a>
-            </div>
-            <p
-              class="text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5 pt-0.5 font-sans"
-            >
-              <time datetime={pubDate.toISOString()}>
-                <FormattedDate date={pubDate} />
-              </time>
-              {
-                updatedDate && (
-                  <span>
-                    (Updated <FormattedDate date={updatedDate} />)
-                  </span>
-                )
-              }
-              <span>•</span>
-              <span>{readingTime}</span>
-            </p>
-          </div>
-        </div>
-      </div>
+      <AuthorMetadataBar
+        author={authorProfile}
+        pubDate={pubDate}
+        updatedDate={updatedDate}
+        readingTime={readingTime}
+      />
 
       <!-- Hero Image -->
       {
@@ -163,42 +139,7 @@ const primaryTag = tags && tags.length > 0 ? tags[0] : "Article";
       }
 
       <!-- Author Profile Expanded Card -->
-      <div
-        class="mt-12 p-6 rounded-2xl bg-neutral-100/70 dark:bg-surface-cardDark/60 border border-neutral-200/80 dark:border-neutral-800 flex flex-col sm:flex-row items-start gap-5"
-      >
-        <img
-          src={AUTHOR_AVATAR}
-          alt={AUTHOR_NAME}
-          class="w-16 h-16 rounded-full object-cover ring-2 ring-emerald-500/20"
-        />
-        <div class="flex-1">
-          <div class="flex items-center justify-between mb-1">
-            <div>
-              <span
-                class="text-xs font-mono uppercase text-neutral-400 block tracking-wider"
-              >
-                Written by
-              </span>
-              <h4 class="text-lg font-bold text-neutral-900 dark:text-white">
-                {AUTHOR_NAME}
-              </h4>
-            </div>
-            <a
-              href="https://github.com/wuttinanhi"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="px-4 py-1.5 rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 text-xs font-medium hover:opacity-90 transition-opacity"
-            >
-              GitHub
-            </a>
-          </div>
-          <p
-            class="text-sm text-neutral-600 dark:text-neutral-300 mt-2 leading-relaxed"
-          >
-            {AUTHOR_BIO}
-          </p>
-        </div>
-      </div>
+      <AuthorCard author={authorProfile} />
     </main>
 
     <Footer />
@@ -206,6 +147,31 @@ const primaryTag = tags && tags.length > 0 ? tags[0] : "Article";
     <Toast />
 
     <script is:inline>
+      // Open content links in a new tab (excluding intra-page hash anchors)
+      const article = document.querySelector(".article-content");
+      if (article) {
+        const articleLinks = article.querySelectorAll("a");
+        articleLinks.forEach((link) => {
+          const href = link.getAttribute("href");
+          if (href && !href.startsWith("#")) {
+            link.setAttribute("target", "_blank");
+            link.setAttribute("rel", "noopener noreferrer");
+          }
+        });
+
+        article.addEventListener("click", (event) => {
+          const target =
+            event.target instanceof Element ? event.target.closest("a") : null;
+          if (target && article.contains(target)) {
+            const href = target.getAttribute("href");
+            if (href && !href.startsWith("#")) {
+              target.setAttribute("target", "_blank");
+              target.setAttribute("rel", "noopener noreferrer");
+            }
+          }
+        });
+      }
+
       // Reading progress bar calculation
       const progressBar = document.getElementById("readingProgress");
       function updateReadingProgress() {

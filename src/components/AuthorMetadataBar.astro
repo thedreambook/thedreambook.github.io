@@ -1,0 +1,63 @@
+---
+/**
+ * Component displaying post author info, publication/updated date, and estimated reading time.
+ */
+import FormattedDate from "./FormattedDate.astro";
+import type { AuthorProfile } from "../consts";
+
+interface Props {
+  author: AuthorProfile;
+  pubDate: Date;
+  updatedDate?: Date;
+  readingTime: string;
+}
+
+const { author, pubDate, updatedDate, readingTime } = Astro.props;
+---
+
+<div
+  class="flex items-center justify-between py-4 border-y border-neutral-200/80 dark:border-neutral-800/80 mb-10"
+>
+  <div class="flex items-center gap-3">
+    <img
+      src={author.avatar}
+      alt={author.name}
+      class="w-11 h-11 rounded-full object-cover ring-2 ring-emerald-500/20"
+    />
+    <div>
+      <div class="flex items-center gap-2">
+        <span
+          class="text-sm font-semibold text-neutral-900 dark:text-neutral-100"
+        >
+          {author.name}
+        </span>
+        <span class="text-neutral-300 dark:text-neutral-700">•</span>
+        <a
+          href={author.github}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
+        >
+          GitHub
+        </a>
+      </div>
+      <p
+        class="text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5 pt-0.5 font-sans"
+      >
+        <time datetime={pubDate.toISOString()}>
+          <FormattedDate date={pubDate} />
+        </time>
+        {
+          updatedDate && (
+            <span>
+              (Updated <FormattedDate date={updatedDate} />)
+            </span>
+          )
+        }
+        <span>•</span>
+        <span>{readingTime}</span>
+      </p>
+    </div>
+  </div>
+</div>
+
