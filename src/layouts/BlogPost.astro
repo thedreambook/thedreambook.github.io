@@ -68,7 +68,14 @@ const primaryTag = tags && tags.length > 0 ? tags[0] : "Article";
         {title}
       </h1>
 
-     
+      <!-- Subtitle / Dek -->
+      {
+        description && (
+          <p class="text-lg sm:text-xl text-neutral-600 dark:text-neutral-300 font-normal leading-relaxed mb-10">
+            {description}
+          </p>
+        )
+      }
 
       <!-- Author Metadata Bar -->
       <div
@@ -136,16 +143,6 @@ const primaryTag = tags && tags.length > 0 ? tags[0] : "Article";
       <article
         class="article-serif article-content text-[19px] leading-[1.8] text-neutral-800 dark:text-neutral-200"
       >
-
-      <!-- Subtitle / Dek -->
-      {
-        description && (
-          <p class="text-lg sm:text-xl text-neutral-600 dark:text-neutral-300 font-normal leading-relaxed mb-10">
-            {description}
-          </p>
-        )
-      }
-
         <slot />
       </article>
 

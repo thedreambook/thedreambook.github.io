@@ -1,8 +1,9 @@
 ---
-title: 'Introducing Crane - Single command to deploy to VPS'
-description: "crane CLI introduction"
+title: 'Introducing Crane'
+description: "Deploy to VPS with single command"
 pubDate: "Nov 3 2026 10:20 AM"
-# heroImage: "../../../assets/rust-fallback.webp"
+author: dreamoutbox
+heroImage: "../../../assets/fallback.png"
 tags:
   [
     "rust",
