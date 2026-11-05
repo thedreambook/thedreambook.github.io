@@ -45,6 +45,6 @@ Add rust_lldb_mcp to your MCP client configuration
 }
 ```
 
-## Source
+## Source code
 
 [https://github.com/dreamoutbox/rust_lldb_mcp](https://github.com/dreamoutbox/rust_lldb_mcp)

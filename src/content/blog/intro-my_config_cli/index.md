@@ -100,6 +100,6 @@ myconfig mapping delete ~/.vimrc
 # (aliases: remove, rm)
 ```
 
-## Source
+## Source code
 
 [https://github.com/dreamoutbox/my_config_cli](https://github.com/dreamoutbox/my_config_cli)

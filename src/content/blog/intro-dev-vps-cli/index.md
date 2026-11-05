@@ -81,6 +81,6 @@ dev-vps ssh
 dev-vps destroy my-devbox
 ```
 
-## Source
+## Source code
 
 [https://github.com/dreamoutbox/dev-in-vps](https://github.com/dreamoutbox/dev-in-vps)
